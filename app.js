@@ -1,4 +1,4 @@
-// AgroCusto Pro - Complete Logic, Calculations & Extensions
+// AgroCusto Pro - Complete Logic with Benfeitorias, Máquinas, P.U. & P.C. (Gabarito Bruno)
 
 let currentStep = 1;
 let currentMode = 'wizard';
@@ -23,16 +23,23 @@ let mopList = [
   { id: 2, cargo: "Campeiro / Trabalhador Geral", qtd: 1, salario: 2100.00, meses: 12 }
 ];
 
-// Lista de Máquinas e Equipamentos
+// Lista de Benfeitorias (Benf 1 a 5)
+let benfList = [
+  { id: 1, nome: "Benf1 (Galpão / Silo)", valor: 200000.00, valorFinal: 0.00, vidaUtil: 30, pu: 12, pc: 12 },
+  { id: 2, nome: "Benf2 (Cerca / Curral)", valor: 80000.00, valorFinal: 0.00, vidaUtil: 7, pu: 12, pc: 12 }
+];
+
+// Lista de Máquinas e Equipamentos (Maq/Eq 1 a 12)
 let maqList = [
-  { id: 1, nome: "Trator Agrícola 110 CV", valor: 250000.00, vidaUtil: 10 },
-  { id: 2, nome: "Plantadeira 9 Linhas", valor: 120000.00, vidaUtil: 10 },
-  { id: 3, nome: "Pulverizador de Arasto 2000L", valor: 65000.00, vidaUtil: 8 }
+  { id: 1, nome: "Maq/Eq1 (Trator Cabinado)", valor: 200000.00, valorFinal: 20000.00, vidaUtil: 10, pu: 12, pc: 12 },
+  { id: 2, nome: "Maq/Eq2 (Plantadeira)", valor: 50000.00, valorFinal: 5000.00, vidaUtil: 10, pu: 12, pc: 12 },
+  { id: 3, nome: "Maq/Eq3 (Pulverizador)", valor: 5000.00, valorFinal: 500.00, vidaUtil: 1, pu: 3, pc: 12 }
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
   renderInsumosTable();
   renderMOPTable();
+  renderBenfTable();
   renderMaqTable();
   initChart();
   calculateAll();
@@ -269,7 +276,79 @@ function removeMOP(id) {
   calculateAll();
 }
 
-// MÁQUINAS
+// BENFEITORIAS (Benf 1 a 5)
+function renderBenfTable() {
+  const tbody = document.getElementById('tbl-benf-body');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  const taxaJuros = (parseFloat(document.getElementById('input-taxa-juros')?.value) || 6.0) / 100;
+
+  benfList.forEach(item => {
+    const pu = item.pu || 12;
+    const pc = item.pc > 0 ? item.pc : 12;
+    const fatorUso = pu / pc;
+
+    const dbenf = item.vidaUtil > 0 ? ((item.valor - item.valorFinal) / item.vidaUtil) * fatorUso : 0;
+    const cobenf = ((item.valor + item.valorFinal) / 2) * taxaJuros * fatorUso;
+
+    const tr = document.createElement('tr');
+    tr.className = "border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40";
+    tr.innerHTML = `
+      <td class="p-1">
+        <input type="text" value="${item.nome}" onchange="updateBenf(${item.id}, 'nome', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded p-1 text-xs">
+      </td>
+      <td class="p-1">
+        <input type="number" value="${item.valor.toFixed(2)}" step="0.01" oninput="updateBenf(${item.id}, 'valor', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded p-1 text-xs">
+      </td>
+      <td class="p-1">
+        <input type="number" value="${item.valorFinal.toFixed(2)}" step="0.01" oninput="updateBenf(${item.id}, 'valorFinal', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded p-1 text-xs">
+      </td>
+      <td class="p-1">
+        <input type="number" value="${item.vidaUtil}" oninput="updateBenf(${item.id}, 'vidaUtil', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded p-1 text-xs">
+      </td>
+      <td class="p-1">
+        <input type="number" value="${item.pu}" oninput="updateBenf(${item.id}, 'pu', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded p-1 text-xs">
+      </td>
+      <td class="p-1">
+        <input type="number" value="${item.pc}" oninput="updateBenf(${item.id}, 'pc', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded p-1 text-xs">
+      </td>
+      <td class="p-1 text-right font-semibold text-slate-700 dark:text-slate-300">${formatMoney(dbenf)}</td>
+      <td class="p-1 text-right font-semibold text-slate-700 dark:text-slate-300">${formatMoney(cobenf)}</td>
+      <td class="p-1 text-center">
+        <button onclick="removeBenf(${item.id})" class="text-rose-500 hover:text-rose-700">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+  lucide.createIcons();
+}
+
+function addBenfRow() {
+  const newId = benfList.length > 0 ? Math.max(...benfList.map(i => i.id)) + 1 : 1;
+  benfList.push({ id: newId, nome: `Benf${newId} (Edificação)`, valor: 50000.00, valorFinal: 0.00, vidaUtil: 20, pu: 12, pc: 12 });
+  renderBenfTable();
+  calculateAll();
+}
+
+function updateBenf(id, field, value) {
+  const item = benfList.find(i => i.id === id);
+  if (item) {
+    item[field] = field === 'nome' ? value : parseFloat(value) || 0;
+    renderBenfTable();
+    calculateAll();
+  }
+}
+
+function removeBenf(id) {
+  benfList = benfList.filter(i => i.id !== id);
+  renderBenfTable();
+  calculateAll();
+}
+
+// MÁQUINAS E EQUIPAMENTOS (Maq/Eq 1 a 12)
 function renderMaqTable() {
   const tbody = document.getElementById('tbl-maq-body');
   if (!tbody) return;
@@ -278,26 +357,39 @@ function renderMaqTable() {
   const taxaJuros = (parseFloat(document.getElementById('input-taxa-juros')?.value) || 6.0) / 100;
 
   maqList.forEach(item => {
-    const depAno = item.vidaUtil > 0 ? item.valor / item.vidaUtil : 0;
-    const cOport = (item.valor / 2) * taxaJuros;
+    const pu = item.pu || 12;
+    const pc = item.pc > 0 ? item.pc : 12;
+    const fatorUso = pu / pc;
+
+    const dmaq = item.vidaUtil > 0 ? ((item.valor - item.valorFinal) / item.vidaUtil) * fatorUso : 0;
+    const comaq = ((item.valor + item.valorFinal) / 2) * taxaJuros * fatorUso;
 
     const tr = document.createElement('tr');
     tr.className = "border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40";
     tr.innerHTML = `
-      <td class="p-2">
-        <input type="text" value="${item.nome}" onchange="updateMaq(${item.id}, 'nome', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded px-1.5 py-1 text-xs">
+      <td class="p-1">
+        <input type="text" value="${item.nome}" onchange="updateMaq(${item.id}, 'nome', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded p-1 text-xs">
       </td>
-      <td class="p-2">
-        <input type="number" value="${item.valor.toFixed(2)}" step="0.01" oninput="updateMaq(${item.id}, 'valor', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded px-1.5 py-1 text-xs">
+      <td class="p-1">
+        <input type="number" value="${item.valor.toFixed(2)}" step="0.01" oninput="updateMaq(${item.id}, 'valor', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded p-1 text-xs">
       </td>
-      <td class="p-2">
-        <input type="number" value="${item.vidaUtil}" oninput="updateMaq(${item.id}, 'vidaUtil', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded px-1.5 py-1 text-xs">
+      <td class="p-1">
+        <input type="number" value="${item.valorFinal.toFixed(2)}" step="0.01" oninput="updateMaq(${item.id}, 'valorFinal', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded p-1 text-xs">
       </td>
-      <td class="p-2 text-right font-semibold text-slate-700 dark:text-slate-300">${formatMoney(depAno)}</td>
-      <td class="p-2 text-right font-semibold text-slate-700 dark:text-slate-300">${formatMoney(cOport)}</td>
-      <td class="p-2 text-center">
+      <td class="p-1">
+        <input type="number" value="${item.vidaUtil}" oninput="updateMaq(${item.id}, 'vidaUtil', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded p-1 text-xs">
+      </td>
+      <td class="p-1">
+        <input type="number" value="${item.pu}" oninput="updateMaq(${item.id}, 'pu', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded p-1 text-xs">
+      </td>
+      <td class="p-1">
+        <input type="number" value="${item.pc}" oninput="updateMaq(${item.id}, 'pc', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded p-1 text-xs">
+      </td>
+      <td class="p-1 text-right font-semibold text-slate-700 dark:text-slate-300">${formatMoney(dmaq)}</td>
+      <td class="p-1 text-right font-semibold text-slate-700 dark:text-slate-300">${formatMoney(comaq)}</td>
+      <td class="p-1 text-center">
         <button onclick="removeMaq(${item.id})" class="text-rose-500 hover:text-rose-700">
-          <i data-lucide="trash-2" class="w-4 h-4"></i>
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
         </button>
       </td>
     `;
@@ -308,7 +400,7 @@ function renderMaqTable() {
 
 function addMaqRow() {
   const newId = maqList.length > 0 ? Math.max(...maqList.map(i => i.id)) + 1 : 1;
-  maqList.push({ id: newId, nome: "Novo Equipamento", valor: 50000.00, vidaUtil: 10 });
+  maqList.push({ id: newId, nome: `Maq/Eq${newId}`, valor: 50000.00, valorFinal: 5000.00, vidaUtil: 10, pu: 12, pc: 12 });
   renderMaqTable();
   calculateAll();
 }
@@ -328,7 +420,7 @@ function removeMaq(id) {
   calculateAll();
 }
 
-// MOTOR PRINCIPAL DE CÁLCULOS DA PLANILHA
+// MOTOR PRINCIPAL DE CÁLCULOS DO GABARITO
 function calculateAll() {
   const cultura = document.getElementById('input-cultura')?.value || 'Atividade';
   const printCultura = document.getElementById('print-cultura-name');
@@ -357,15 +449,29 @@ function calculateAll() {
   const moTempValor = parseFloat(document.getElementById('input-mo-temp-valor')?.value) || 0;
   const totalMOTemp = moTempQtd * moTempDH * moTempValor;
 
-  // 4. Depreciação e Custo de Oportunidade das Máquinas (Fixo)
-  let totalDepMaq = 0;
-  let totalCOportMaq = 0;
-  maqList.forEach(m => {
-    if (m.vidaUtil > 0) totalDepMaq += m.valor / m.vidaUtil;
-    totalCOportMaq += (m.valor / 2) * taxaJuros;
+  // 4. Benfeitorias (Dbenf e Cobenf)
+  let Dbenf = 0;
+  let Cobenf = 0;
+  benfList.forEach(b => {
+    const pu = b.pu || 12;
+    const pc = b.pc > 0 ? b.pc : 12;
+    const fatorUso = pu / pc;
+    if (b.vidaUtil > 0) Dbenf += ((b.valor - b.valorFinal) / b.vidaUtil) * fatorUso;
+    Cobenf += ((b.valor + b.valorFinal) / 2) * taxaJuros * fatorUso;
   });
 
-  // 5. Custo da Terra
+  // 5. Máquinas e Equipamentos (Dmaq/eq e Comaq/e)
+  let Dmaq = 0;
+  let Comaq = 0;
+  maqList.forEach(m => {
+    const pu = m.pu || 12;
+    const pc = m.pc > 0 ? m.pc : 12;
+    const fatorUso = pu / pc;
+    if (m.vidaUtil > 0) Dmaq += ((m.valor - m.valorFinal) / m.vidaUtil) * fatorUso;
+    Comaq += ((m.valor + m.valorFinal) / 2) * taxaJuros * fatorUso;
+  });
+
+  // 6. Custo da Terra
   const terraHa = parseFloat(document.getElementById('input-terra-ha')?.value) || 0;
   const terraArrendValor = parseFloat(document.getElementById('input-terra-arrend-valor')?.value) || 0;
   const terraTipo = document.getElementById('input-terra-tipo')?.value || 'propria';
@@ -378,22 +484,19 @@ function calculateAll() {
     terraCustoVariavel = terraHa * terraArrendValor;
   }
 
-  // TOTIS DOS CUSTOS
-  const CFT = totalMOP + totalDepMaq + totalCOportMaq + terraCustoFixo;
+  // TOTIS DOS CUSTOS DE GABARITO BRUNO
+  const CFT = totalMOP + Dbenf + Cobenf + Dmaq + Comaq + terraCustoFixo;
   const CVT = totalInsumos + totalMOTemp + terraCustoVariavel;
   const CT = CFT + CVT;
-  const Cop = CVT + totalDepMaq + totalMOP;
+  const Cop = CVT + Dbenf + Dmaq + totalMOP;
 
-  // Custos Médios
   const Copme = prodTotal > 0 ? Cop / prodTotal : 0;
   const Ctme = prodTotal > 0 ? CT / prodTotal : 0;
 
-  // Receitas & Lucros Líquidos (Pós-Deduções)
   const RBT = prodTotal * precoUnitLiquido;
   const RLT = RBT - CT;
   const Rlop = RBT - Cop;
 
-  // Ponto de Nivelamento (PN) e Margem de Segurança (MS %)
   const PN = precoUnitLiquido > 0 ? CT / precoUnitLiquido : 0;
   const MS = prodTotal > 0 ? ((prodTotal - PN) / prodTotal) * 100 : 0;
 
@@ -405,6 +508,12 @@ function calculateAll() {
   setText('res-ct', formatMoney(CT));
   setText('res-rlt', formatMoney(RLT));
   setText('res-rlop', formatMoney(Rlop));
+
+  setText('res-dbenf', formatMoney(Dbenf));
+  setText('res-cobenf', formatMoney(Cobenf));
+  setText('res-dmaq', formatMoney(Dmaq));
+  setText('res-comaq', formatMoney(Comaq));
+
   setText('res-cft', formatMoney(CFT));
   setText('res-cvt', formatMoney(CVT));
   setText('res-cop', formatMoney(Cop));
@@ -422,10 +531,10 @@ function calculateAll() {
   renderSensitivityTable(prodTotal, CT, precoUnitLiquido);
   updateChart(CFT, CVT, RLT > 0 ? RLT : 0);
 
-  // Retornar objeto de dados para exportação/comparação
   return {
     cultura, unMedida, prodTotal, precoUnitBruto, precoUnitLiquido,
-    CFT, CVT, CT, Cop, Copme, Ctme, RBT, RLT, Rlop, PN, MS, lucratividade, rentabilidade
+    CFT, CVT, CT, Cop, Copme, Ctme, RBT, RLT, Rlop, PN, MS, lucratividade, rentabilidade,
+    Dbenf, Cobenf, Dmaq, Comaq
   };
 }
 
@@ -482,7 +591,6 @@ function renderSensitivityTable(prodTotal, CT, precoBase) {
   });
 }
 
-// COMPARTILHAR NO WHATSAPP
 function shareWhatsApp() {
   const data = calculateAll();
   const text = `🌱 *RESUMO DE CUSTO & VIABILIDADE AGRÍCOLA (AgroCusto Pro)*
@@ -500,7 +608,6 @@ _Calculado via AgroCusto Pro App_`;
   window.open(url, '_blank');
 }
 
-// EXPORTAR PARA EXCEL / CSV
 function exportToCSV() {
   const data = calculateAll();
   let csv = `Item;Valor\n`;
@@ -508,6 +615,10 @@ function exportToCSV() {
   csv += `Producao Total;${data.prodTotal} ${data.unMedida}\n`;
   csv += `Preco Unitario Bruto;${data.precoUnitBruto}\n`;
   csv += `Preco Unitario Liquido;${data.precoUnitLiquido}\n`;
+  csv += `Depreciacao Benfeitorias (Dbenf);${data.Dbenf}\n`;
+  csv += `Custo Oportunidade Benfeitorias (Cobenf);${data.Cobenf}\n`;
+  csv += `Depreciacao Maquinas (Dmaq/eq);${data.Dmaq}\n`;
+  csv += `Custo Oportunidade Maquinas (Comaq/e);${data.Comaq}\n`;
   csv += `Custo Fixo Total (CFT);${data.CFT}\n`;
   csv += `Custo Variavel Total (CVT);${data.CVT}\n`;
   csv += `Custo Total (CT);${data.CT}\n`;
@@ -525,7 +636,6 @@ function exportToCSV() {
   document.body.removeChild(link);
 }
 
-// GERENCIADOR DE SAFRAS (SALVAR / CARREGAR)
 function saveCurrentSimulation() {
   const cultura = document.getElementById('input-cultura')?.value || 'Safra';
   const name = prompt("Digite um nome para identificar esta safra:", `${cultura} - ${new Date().toLocaleDateString()}`);
@@ -539,7 +649,7 @@ function saveCurrentSimulation() {
     precoUnit: document.getElementById('input-preco-unitario').value,
     periodo: document.getElementById('input-periodo-meses').value,
     taxaJuros: document.getElementById('input-taxa-juros').value,
-    insumos, mopList, maqList,
+    insumos, mopList, benfList, maqList,
     date: new Date().toLocaleDateString()
   };
 
@@ -573,7 +683,7 @@ function showSavedSimulationsModal() {
           <button onclick="deleteSavedSimulation(${index})" class="bg-rose-600 hover:bg-rose-500 text-white px-2 py-1 rounded text-xs font-semibold">Excluir</button>
         </div>
       `;
-      listEl.appendChild(tr);
+      listEl.appendChild(div);
     });
   }
 
@@ -598,10 +708,12 @@ function loadSavedSimulation(index) {
 
   insumos = item.insumos || [];
   mopList = item.mopList || [];
+  benfList = item.benfList || [];
   maqList = item.maqList || [];
 
   renderInsumosTable();
   renderMOPTable();
+  renderBenfTable();
   renderMaqTable();
   calculateAll();
 
@@ -616,7 +728,6 @@ function deleteSavedSimulation(index) {
   showSavedSimulationsModal();
 }
 
-// COMPARADOR DE CENÁRIOS
 function openCompareModal() {
   document.getElementById('modal-compare')?.classList.remove('hidden');
   renderCompareResults();
@@ -671,7 +782,7 @@ function renderCompareResults() {
   area.innerHTML = html;
 }
 
-// CARREGAR DADOS DE EXEMPLO (GABARITO BRUNO)
+// CARREGAR DADOS DE EXEMPLO DO GABARITO BRUNO
 function loadSampleData() {
   document.getElementById('input-cultura').value = "Milho Safra Comercial";
   document.getElementById('input-unidade').value = "Sacas (60kg)";
@@ -692,20 +803,26 @@ function loadSampleData() {
     { id: 1, cargo: "Tratorista Especializado", qtd: 1, salario: 3100.00, meses: 12 }
   ];
 
+  benfList = [
+    { id: 1, nome: "Benf1 (Galpão Alvenaria)", valor: 200000.00, valorFinal: 0.00, vidaUtil: 30, pu: 12, pc: 12 },
+    { id: 2, nome: "Benf2 (Cerca / Curral)", valor: 80000.00, valorFinal: 0.00, vidaUtil: 7, pu: 12, pc: 12 }
+  ];
+
   maqList = [
-    { id: 1, nome: "Trator Cabinado 125 CV", valor: 310000.00, vidaUtil: 10 },
-    { id: 2, nome: "Plantadeira de Precisão", valor: 145000.00, vidaUtil: 10 }
+    { id: 1, nome: "Maq/Eq1 (Trator Cabinado)", valor: 200000.00, valorFinal: 20000.00, vidaUtil: 10, pu: 12, pc: 12 },
+    { id: 2, nome: "Maq/Eq2 (Plantadeira)", valor: 50000.00, valorFinal: 5000.00, vidaUtil: 10, pu: 12, pc: 12 },
+    { id: 3, nome: "Maq/Eq3 (Pulverizador)", valor: 5000.00, valorFinal: 500.00, vidaUtil: 1, pu: 3, pc: 12 }
   ];
 
   renderInsumosTable();
   renderMOPTable();
+  renderBenfTable();
   renderMaqTable();
   calculateAll();
 
-  alert("Dados de exemplo (Gabarito Bruno) carregados com sucesso!");
+  alert("Dados de exemplo (Gabarito Bruno com Benfeitorias e Máquinas) carregados com sucesso!");
 }
 
-// INICIA GRÁFICO
 function initChart() {
   const ctx = document.getElementById('chartCustos')?.getContext('2d');
   if (!ctx) return;

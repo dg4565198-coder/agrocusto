@@ -49,7 +49,7 @@
     }
     .tooltip .tooltiptext {
       visibility: hidden;
-      width: 220px;
+      width: 240px;
       background-color: #0f172a;
       color: #fff;
       text-align: left;
@@ -59,7 +59,7 @@
       z-index: 100;
       bottom: 125%;
       left: 50%;
-      margin-left: -110px;
+      margin-left: -120px;
       opacity: 0;
       transition: opacity 0.2s;
       font-size: 11px;
@@ -94,20 +94,17 @@
         </div>
         <div>
           <h1 class="font-bold text-lg leading-tight tracking-tight">Custo de Produção & Viabilidade</h1>
-          <p class="text-xs text-agro-200 dark:text-slate-400 hidden sm:block">Análise Econômica Agrícola, Ponderação de Riscos & Cenários</p>
+          <p class="text-xs text-agro-200 dark:text-slate-400 hidden sm:block">Modelo Econômico Completo (Benfeitorias, Máquinas, P.U. & P.C.)</p>
         </div>
       </div>
 
       <!-- CONTROLES DO HEADER -->
       <div class="flex items-center gap-2">
-        
-        <!-- Toggle Dark/Light Mode -->
         <button onclick="toggleTheme()" title="Alternar Tema Claro/Escuro" class="bg-agro-900/60 dark:bg-slate-800 hover:bg-agro-700 p-2 rounded-lg text-amber-300 transition flex items-center gap-1 border border-agro-600/50">
           <i data-lucide="sun" id="theme-icon-sun" class="w-4 h-4 hidden"></i>
           <i data-lucide="moon" id="theme-icon-moon" class="w-4 h-4"></i>
         </button>
 
-        <!-- Alternar Modo Guiado vs Painel -->
         <div class="bg-agro-900/60 dark:bg-slate-800 p-1 rounded-lg flex items-center text-xs font-medium border border-agro-600/50">
           <button id="btn-mode-wizard" onclick="setAppMode('wizard')" class="px-3 py-1.5 rounded-md transition flex items-center gap-1 bg-white text-agro-900 font-bold shadow">
             <i data-lucide="list-ordered" class="w-4 h-4"></i>
@@ -119,13 +116,11 @@
           </button>
         </div>
 
-        <!-- Botão Carregar Exemplo -->
         <button onclick="loadSampleData()" title="Carregar Dados de Exemplo (Gabarito Bruno)" class="bg-agro-600 hover:bg-agro-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 border border-agro-400 transition shadow-sm">
           <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
           <span class="hidden md:inline">Dados Exemplo</span>
         </button>
 
-        <!-- Botão Instalar PWA -->
         <button id="btn-install-pwa" onclick="installPWA()" class="hidden bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow-md animate-bounce">
           <i data-lucide="download" class="w-4 h-4"></i>
           <span>Baixar App</span>
@@ -151,7 +146,7 @@
       </div>
     </div>
 
-    <!-- BANNER DE BARRA DE FERRAMENTAS EXTRAS -->
+    <!-- FERRAMENTAS EXTRAS -->
     <div class="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-wrap justify-between items-center gap-3 no-print">
       <div class="flex items-center gap-2 text-xs">
         <i data-lucide="folder-git2" class="w-4 h-4 text-agro-600"></i>
@@ -214,7 +209,7 @@
         <i data-lucide="users" class="w-4 h-4"></i> Mão de Obra
       </button>
       <button onclick="switchDashTab('bens')" id="tab-bens" class="px-4 py-2 font-medium text-sm text-slate-600 dark:text-slate-400 border-b-2 border-transparent flex items-center gap-1.5">
-        <i data-lucide="tractor" class="w-4 h-4"></i> Máquinas & Terra
+        <i data-lucide="tractor" class="w-4 h-4"></i> Máquinas & Benfeitorias
       </button>
       <button onclick="switchDashTab('resultados')" id="tab-resultados" class="px-4 py-2 font-medium text-sm text-slate-600 dark:text-slate-400 border-b-2 border-transparent flex items-center gap-1.5">
         <i data-lucide="pie-chart" class="w-4 h-4"></i> Análise de Cenários
@@ -385,20 +380,63 @@
           </div>
         </section>
 
-        <!-- ETAPA 4: MÁQUINAS, BENFEITORIAS E TERRA -->
+        <!-- ETAPA 4: MÁQUINAS, BENFEITORIAS E TERRA (EXACT BENFEITORIAS & MÁQUINAS DA PLANILHA) -->
         <section id="section-bens" class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
           <div class="border-b dark:border-slate-800 pb-3 flex justify-between items-center">
             <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <i data-lucide="tractor" class="w-5 h-5 text-agro-600"></i>
-              Máquinas, Equipamentos, Benfeitorias e Terra
+              Máquinas, Equipamentos, Benfeitorias e Terra (Dbenf, Dmaq/eq, Cobenf, Comaq/e)
             </h2>
           </div>
 
-          <!-- Máquinas e Equipamentos -->
+          <!-- LEGENDA EXPLICATIVA DO GABARITO BRUNO -->
+          <div class="bg-blue-50/70 dark:bg-slate-800/80 p-3 rounded-lg border border-blue-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 space-y-1">
+            <strong class="block font-bold text-blue-900 dark:text-blue-300">📌 Legenda de Fórmulas e Proporções do Gabarito:</strong>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-1 text-[11px]">
+              <div><strong>Dbenf:</strong> Depreciação Benfeitorias</div>
+              <div><strong>Cobenf:</strong> Custo Oportunidade Benfeitorias</div>
+              <div><strong>Dmaq/eq:</strong> Depreciação Máquinas</div>
+              <div><strong>Comaq/e:</strong> Custo Oportunidade Máquinas</div>
+              <div><strong>P.U.:</strong> Período Uso (meses/horas)</div>
+              <div><strong>P.C.:</strong> Período Completo (meses/horas)</div>
+            </div>
+          </div>
+
+          <!-- A) BENFEITORIAS (Benf 1 a 5) -->
           <div class="space-y-3">
             <div class="flex justify-between items-center">
-              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">A) Máquinas e Equipamentos (Depreciação e Custo Oportunidade)</h3>
-              <button onclick="addMaqRow()" class="text-[11px] bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-slate-800 dark:text-slate-200 px-2.5 py-1 rounded font-semibold flex items-center gap-1">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">A) Benfeitorias (Benf 1 a 5 - Edificações, Silos, Cercas, Currais)</h3>
+              <button onclick="addBenfRow()" class="text-[11px] bg-agro-700 hover:bg-agro-600 text-white px-2.5 py-1 rounded font-semibold flex items-center gap-1">
+                <i data-lucide="plus" class="w-3 h-3"></i> Adicionar Benfeitoria
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs text-left border-collapse">
+                <thead>
+                  <tr class="bg-slate-100 dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300">
+                    <th class="p-1.5">Descrição</th>
+                    <th class="p-1.5 w-20">Valor (R$)</th>
+                    <th class="p-1.5 w-20">V. Final (R$)</th>
+                    <th class="p-1.5 w-14">V. Útil</th>
+                    <th class="p-1.5 w-12">P.U.</th>
+                    <th class="p-1.5 w-12">P.C.</th>
+                    <th class="p-1.5 w-20 text-right">Dbenf</th>
+                    <th class="p-1.5 w-20 text-right">Cobenf</th>
+                    <th class="p-1.5 w-6"></th>
+                  </tr>
+                </thead>
+                <tbody id="tbl-benf-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <hr class="border-slate-200 dark:border-slate-800">
+
+          <!-- B) MÁQUINAS E EQUIPAMENTOS (Maq/Eq 1 a 12) -->
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">B) Máquinas e Equipamentos (Maq/Eq 1 a 12 - Tratores, Colheitadeiras, Implementos)</h3>
+              <button onclick="addMaqRow()" class="text-[11px] bg-agro-700 hover:bg-agro-600 text-white px-2.5 py-1 rounded font-semibold flex items-center gap-1">
                 <i data-lucide="plus" class="w-3 h-3"></i> Adicionar Máquina
               </button>
             </div>
@@ -406,12 +444,15 @@
               <table class="w-full text-xs text-left border-collapse">
                 <thead>
                   <tr class="bg-slate-100 dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300">
-                    <th class="p-2">Equipamento</th>
-                    <th class="p-2 w-24">Valor (R$)</th>
-                    <th class="p-2 w-16">Vida Útil (anos)</th>
-                    <th class="p-2 w-24 text-right">Depreciação/ano</th>
-                    <th class="p-2 w-24 text-right">C. Oportunidade</th>
-                    <th class="p-2 w-8"></th>
+                    <th class="p-1.5">Descrição</th>
+                    <th class="p-1.5 w-20">Valor (R$)</th>
+                    <th class="p-1.5 w-20">V. Final (R$)</th>
+                    <th class="p-1.5 w-14">V. Útil</th>
+                    <th class="p-1.5 w-12">P.U.</th>
+                    <th class="p-1.5 w-12">P.C.</th>
+                    <th class="p-1.5 w-20 text-right">Dmaq/eq</th>
+                    <th class="p-1.5 w-20 text-right">Comaq/e</th>
+                    <th class="p-1.5 w-6"></th>
                   </tr>
                 </thead>
                 <tbody id="tbl-maq-body"></tbody>
@@ -421,9 +462,9 @@
 
           <hr class="border-slate-200 dark:border-slate-800">
 
-          <!-- Terra Própria vs Arrendada -->
+          <!-- C) TERRA PRÓPRIA VS ARRENDADA -->
           <div class="space-y-3">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">B) Custo da Terra (Própria vs Arrendada)</h3>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">C) Custo da Terra (Própria vs Arrendada)</h3>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-lg border dark:border-slate-700">
               <div>
                 <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400">Hectares Utilizados</label>
@@ -521,29 +562,48 @@
           </div>
         </div>
 
-        <!-- DETALHAMENTO DOS CUSTOS E MARGENS -->
+        <!-- DETALHAMENTO DOS CUSTOS DE GABARITO (Dbenf, Dmaq/eq, Cobenf, Comaq/e) -->
         <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 border-b dark:border-slate-800 pb-2">Custos Médios & Ponto de Nivelamento</h3>
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 border-b dark:border-slate-800 pb-2">Custos Médios & Totais de Gabarito</h3>
 
           <div class="space-y-2 text-xs">
             <div class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
-              <span class="text-slate-600 dark:text-slate-400">A) Custo Fixo Total (CFT):</span>
+              <span class="text-slate-600 dark:text-slate-400">Depreciação Benfeitorias (Dbenf):</span>
+              <span id="res-dbenf" class="font-bold text-slate-800 dark:text-slate-200">R$ 0,00</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+              <span class="text-slate-600 dark:text-slate-400">Custo Oportunidade Benfeitorias (Cobenf):</span>
+              <span id="res-cobenf" class="font-bold text-slate-800 dark:text-slate-200">R$ 0,00</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+              <span class="text-slate-600 dark:text-slate-400">Depreciação Máquinas/Equip (Dmaq/eq):</span>
+              <span id="res-dmaq" class="font-bold text-slate-800 dark:text-slate-200">R$ 0,00</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+              <span class="text-slate-600 dark:text-slate-400">Custo Oportunidade Máquinas (Comaq/e):</span>
+              <span id="res-comaq" class="font-bold text-slate-800 dark:text-slate-200">R$ 0,00</span>
+            </div>
+
+            <hr class="border-slate-200 dark:border-slate-800">
+
+            <div class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+              <span class="text-slate-600 dark:text-slate-400 font-semibold">A) Custo Fixo Total (CFT):</span>
               <span id="res-cft" class="font-bold text-slate-800 dark:text-slate-200">R$ 0,00</span>
             </div>
             <div class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
-              <span class="text-slate-600 dark:text-slate-400">B) Custo Variável Total (CVT):</span>
+              <span class="text-slate-600 dark:text-slate-400 font-semibold">B) Custo Variável Total (CVT):</span>
               <span id="res-cvt" class="font-bold text-slate-800 dark:text-slate-200">R$ 0,00</span>
             </div>
             <div class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
-              <span class="text-slate-600 dark:text-slate-400">D) Custo Operacional (Cop):</span>
+              <span class="text-slate-600 dark:text-slate-400 font-semibold">D) Custo Operacional (Cop):</span>
               <span id="res-cop" class="font-bold text-slate-800 dark:text-slate-200">R$ 0,00</span>
             </div>
             <div class="flex justify-between py-1.5 bg-slate-50 dark:bg-slate-800/60 px-2 rounded-lg">
-              <span class="text-slate-700 dark:text-slate-300 font-semibold">Custo Operacional Médio (por unid.):</span>
+              <span class="text-slate-700 dark:text-slate-300 font-semibold">Custo Operacional Médio (Copme):</span>
               <span id="res-copme" class="font-bold text-slate-900 dark:text-white">R$ 0,00</span>
             </div>
             <div class="flex justify-between py-1.5 bg-slate-50 dark:bg-slate-800/60 px-2 rounded-lg">
-              <span class="text-slate-700 dark:text-slate-300 font-semibold">Custo Total Médio (por unid.):</span>
+              <span class="text-slate-700 dark:text-slate-300 font-semibold">Custo Total Médio (Ctme):</span>
               <span id="res-ctme" class="font-bold text-slate-900 dark:text-white">R$ 0,00</span>
             </div>
           </div>
@@ -553,13 +613,13 @@
           <!-- INDICADORES ECONÔMICOS -->
           <div class="grid grid-cols-2 gap-2 text-xs">
             <div class="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border dark:border-slate-700">
-              <span class="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Ponto de Nivelamento</span>
+              <span class="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Ponto de Nivelamento (PN)</span>
               <span id="res-pn" class="font-bold text-slate-900 dark:text-white text-sm">0 sacas</span>
               <span class="text-[10px] text-slate-400 block">Produção mín. para zerar custo</span>
             </div>
 
             <div class="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border dark:border-slate-700">
-              <span class="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Margem de Segurança</span>
+              <span class="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Margem de Segurança (MS)</span>
               <span id="res-ms" class="font-bold text-slate-900 dark:text-white text-sm">0.0%</span>
               <span class="text-[10px] text-slate-400 block">Folga até o ponto de equilíbrio</span>
             </div>
@@ -630,9 +690,7 @@
         <button onclick="setScenario('B')" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-1.5 rounded-lg flex-1">Salvar como Cenário B</button>
       </div>
 
-      <div id="compare-results-area" class="grid grid-cols-2 gap-4 text-xs border-t dark:border-slate-800 pt-4">
-        <!-- Renderizado dinamicamente -->
-      </div>
+      <div id="compare-results-area" class="grid grid-cols-2 gap-4 text-xs border-t dark:border-slate-800 pt-4"></div>
     </div>
   </div>
 
@@ -657,15 +715,13 @@
         <strong>AgroCusto Pro</strong> &bull; Modelo Econômico Agrícola (Gabarito Bruno Soares).
       </div>
       <div>
-        PWA Habilitado &bull; Dark Mode &bull; WhatsApp &bull; Comparador de Cenários
+        Benfeitorias (Dbenf, Cobenf) &bull; Máquinas (Dmaq/eq, Comaq/e) &bull; P.U. & P.C. Proporcional
       </div>
     </div>
   </footer>
 
-  <!-- SCRIPT DA APLICAÇÃO -->
   <script src="app.js"></script>
 
-  <!-- REGISTRO DO SERVICE WORKER (PWA) -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
