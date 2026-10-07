@@ -1,4 +1,4 @@
-// AgroCusto Pro - Complete Logic with Benfeitorias, Máquinas, P.U. & P.C. (Gabarito Bruno)
+// AgroCusto Pro - Complete Logic (Benfeitorias, Terra Própria/Arrendada, M.O.P., M.O. Temp, H.E., Especulação)
 
 let currentStep = 1;
 let currentMode = 'wizard';
@@ -11,16 +11,22 @@ let scenarioB = null;
 
 // Lista de Insumos
 let insumos = [
-  { id: 1, nome: "Sementes e Mudas", qtd: 50, valorUnit: 350.00 },
-  { id: 2, nome: "Adubos e Fertilizantes (NPK)", qtd: 150, valorUnit: 180.00 },
-  { id: 3, nome: "Defensivos Agrícolas (Herbicidas/Fungicidas)", qtd: 80, valorUnit: 95.00 },
-  { id: 4, nome: "Combustível e Lubrificantes (Óleo Diesel)", qtd: 1200, valorUnit: 6.20 }
+  { id: 1, nome: "Adubos, Fertilizantes e Insumos Gerais", qtd: 1, valorUnit: 28000.00 }
 ];
 
-// Lista de Mão de Obra Permanente (M.O.P.)
+// Lista de Mão de Obra Permanente (M.O.P.) - Gabarito: 8 Trab, R$ 3000, 13 meses = R$ 312.000
 let mopList = [
-  { id: 1, cargo: "Tratorista / Operador", qtd: 1, salario: 2800.00, meses: 12 },
-  { id: 2, cargo: "Campeiro / Trabalhador Geral", qtd: 1, salario: 2100.00, meses: 12 }
+  { id: 1, cargo: "Trabalhador Permanente (Operadores/Campeiros)", qtd: 8, salario: 3000.00, meses: 13 }
+];
+
+// Lista de Mão de Obra Temporária - Gabarito: 300 Trab, 1 d/h, R$ 150/dia = R$ 45.000
+let motempList = [
+  { id: 1, servico: "Trabalhador Temporário (Colheita/Manej).", qtd: 300, quantDH: 1.0, valorDH: 150.00 }
+];
+
+// Lista de Horas Extras
+let heList = [
+  { id: 1, trab: 0, unid: "dia", salario: 0.00, quant: 0 }
 ];
 
 // Lista de Benfeitorias (Benf 1 a 5)
@@ -39,6 +45,8 @@ let maqList = [
 document.addEventListener('DOMContentLoaded', () => {
   renderInsumosTable();
   renderMOPTable();
+  renderMOTempTable();
+  renderHETable();
   renderBenfTable();
   renderMaqTable();
   initChart();
@@ -219,7 +227,7 @@ function removeInsumo(id) {
   calculateAll();
 }
 
-// MÃO DE OBRA PERMANENTE
+// MÃO DE OBRA PERMANENTE (8 Trab, Salário 3000, Período 13 = 312.000)
 function renderMOPTable() {
   const tbody = document.getElementById('tbl-mop-body');
   if (!tbody) return;
@@ -234,7 +242,7 @@ function renderMOPTable() {
         <input type="text" value="${item.cargo}" onchange="updateMOP(${item.id}, 'cargo', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded px-1.5 py-1 text-xs">
       </td>
       <td class="p-2">
-        <input type="number" value="${item.qtd}" oninput="updateMOP(${item.id}, 'qtd', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded px-1.5 py-1 text-xs">
+        <input type="number" value="${item.qtd}" oninput="updateMOP(${item.id}, 'qtd', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded px-1.5 py-1 text-xs font-semibold">
       </td>
       <td class="p-2">
         <input type="number" value="${item.salario.toFixed(2)}" step="0.01" oninput="updateMOP(${item.id}, 'salario', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded px-1.5 py-1 text-xs">
@@ -256,7 +264,7 @@ function renderMOPTable() {
 
 function addMOPRow() {
   const newId = mopList.length > 0 ? Math.max(...mopList.map(i => i.id)) + 1 : 1;
-  mopList.push({ id: newId, cargo: "Novo Cargo", qtd: 1, salario: 2000.00, meses: 12 });
+  mopList.push({ id: newId, cargo: "Novo Cargo", qtd: 1, salario: 2000.00, meses: 13 });
   renderMOPTable();
   calculateAll();
 }
@@ -273,6 +281,124 @@ function updateMOP(id, field, value) {
 function removeMOP(id) {
   mopList = mopList.filter(i => i.id !== id);
   renderMOPTable();
+  calculateAll();
+}
+
+// MÃO DE OBRA TEMPORÁRIA (300 Trab, Quant 1.0 d/h, Valor 150 d/h = 45.000)
+function renderMOTempTable() {
+  const tbody = document.getElementById('tbl-motemp-body');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  motempList.forEach(item => {
+    const total = item.qtd * item.quantDH * item.valorDH;
+    const tr = document.createElement('tr');
+    tr.className = "border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40";
+    tr.innerHTML = `
+      <td class="p-2">
+        <input type="text" value="${item.servico}" onchange="updateMOTemp(${item.id}, 'servico', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded px-1.5 py-1 text-xs">
+      </td>
+      <td class="p-2">
+        <input type="number" value="${item.qtd}" oninput="updateMOTemp(${item.id}, 'qtd', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded px-1.5 py-1 text-xs font-semibold">
+      </td>
+      <td class="p-2">
+        <input type="number" value="${item.quantDH}" step="0.1" oninput="updateMOTemp(${item.id}, 'quantDH', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded px-1.5 py-1 text-xs">
+      </td>
+      <td class="p-2">
+        <input type="number" value="${item.valorDH.toFixed(2)}" step="0.01" oninput="updateMOTemp(${item.id}, 'valorDH', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded px-1.5 py-1 text-xs">
+      </td>
+      <td class="p-2 text-right font-bold text-slate-800 dark:text-slate-200">${formatMoney(total)}</td>
+      <td class="p-2 text-center">
+        <button onclick="removeMOTemp(${item.id})" class="text-rose-500 hover:text-rose-700">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+  lucide.createIcons();
+}
+
+function addMOTempRow() {
+  const newId = motempList.length > 0 ? Math.max(...motempList.map(i => i.id)) + 1 : 1;
+  motempList.push({ id: newId, servico: "Novo Serviço Temp.", qtd: 10, quantDH: 1, valorDH: 120.00 });
+  renderMOTempTable();
+  calculateAll();
+}
+
+function updateMOTemp(id, field, value) {
+  const item = motempList.find(i => i.id === id);
+  if (item) {
+    item[field] = field === 'servico' ? value : parseFloat(value) || 0;
+    renderMOTempTable();
+    calculateAll();
+  }
+}
+
+function removeMOTemp(id) {
+  motempList = motempList.filter(i => i.id !== id);
+  renderMOTempTable();
+  calculateAll();
+}
+
+// HORAS EXTRAS
+function renderHETable() {
+  const tbody = document.getElementById('tbl-he-body');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  heList.forEach(item => {
+    const total = item.trab * item.salario * item.quant;
+    const tr = document.createElement('tr');
+    tr.className = "border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40";
+    tr.innerHTML = `
+      <td class="p-2">
+        <input type="number" value="${item.trab}" oninput="updateHE(${item.id}, 'trab', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded px-1.5 py-1 text-xs">
+      </td>
+      <td class="p-2">
+        <select onchange="updateHE(${item.id}, 'unid', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded p-1 text-xs">
+          <option value="dia" ${item.unid === 'dia' ? 'selected' : ''}>dia</option>
+          <option value="hora" ${item.unid === 'hora' ? 'selected' : ''}>hora</option>
+          <option value="mês" ${item.unid === 'mês' ? 'selected' : ''}>mês</option>
+        </select>
+      </td>
+      <td class="p-2">
+        <input type="number" value="${item.salario.toFixed(2)}" step="0.01" oninput="updateHE(${item.id}, 'salario', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded px-1.5 py-1 text-xs">
+      </td>
+      <td class="p-2">
+        <input type="number" value="${item.quant}" oninput="updateHE(${item.id}, 'quant', this.value)" class="w-full border dark:border-slate-700 bg-white dark:bg-slate-800 rounded px-1.5 py-1 text-xs">
+      </td>
+      <td class="p-2 text-right font-bold text-slate-800 dark:text-slate-200">${formatMoney(total)}</td>
+      <td class="p-2 text-center">
+        <button onclick="removeHE(${item.id})" class="text-rose-500 hover:text-rose-700">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+  lucide.createIcons();
+}
+
+function addHERow() {
+  const newId = heList.length > 0 ? Math.max(...heList.map(i => i.id)) + 1 : 1;
+  heList.push({ id: newId, trab: 1, unid: "hora", salario: 25.00, quant: 10 });
+  renderHETable();
+  calculateAll();
+}
+
+function updateHE(id, field, value) {
+  const item = heList.find(i => i.id === id);
+  if (item) {
+    item[field] = (field === 'unid') ? value : parseFloat(value) || 0;
+    renderHETable();
+    calculateAll();
+  }
+}
+
+function removeHE(id) {
+  heList = heList.filter(i => i.id !== id);
+  renderHETable();
   calculateAll();
 }
 
@@ -420,22 +546,33 @@ function removeMaq(id) {
   calculateAll();
 }
 
-// MOTOR PRINCIPAL DE CÁLCULOS DO GABARITO
+// MOTOR PRINCIPAL DE CÁLCULOS DO GABARITO (IMAGEM BRUNO)
 function calculateAll() {
   const cultura = document.getElementById('input-cultura')?.value || 'Atividade';
   const printCultura = document.getElementById('print-cultura-name');
   if (printCultura) printCultura.textContent = cultura;
 
-  const prodTotal = parseFloat(document.getElementById('input-prod-total')?.value) || 0;
+  const prodHa = parseFloat(document.getElementById('input-prod-ha')?.value) || 0;
+  const prodTotalInput = parseFloat(document.getElementById('input-prod-total')?.value) || 0;
   const precoUnitBruto = parseFloat(document.getElementById('input-preco-unitario')?.value) || 0;
   const taxaJuros = (parseFloat(document.getElementById('input-taxa-juros')?.value) || 6.0) / 100;
 
-  // Deduções e Impostos
-  const deducaoFrete = parseFloat(document.getElementById('input-deducao-frete')?.value) || 0;
-  const deducaoArmaz = parseFloat(document.getElementById('input-deducao-armazenagem')?.value) || 0;
-  const deducaoFunruralPct = (parseFloat(document.getElementById('input-deducao-funrural')?.value) || 0) / 100;
+  // Terra Própria vs Arrendada (Imagem)
+  const tpVrArrend = parseFloat(document.getElementById('input-terra-propria-vrarrend')?.value) || 0;
+  const tpHa = parseFloat(document.getElementById('input-terra-propria-ha')?.value) || 0;
+  const tpPeriodo = parseFloat(document.getElementById('input-terra-propria-periodo')?.value) || 0;
+  const totalTerraPropria = tpVrArrend * tpHa * tpPeriodo;
+  setText('lbl-terra-propria-total', formatMoney(totalTerraPropria));
 
-  const precoUnitLiquido = (precoUnitBruto * (1 - deducaoFunruralPct)) - deducaoFrete - deducaoArmaz;
+  const taVrArrend = parseFloat(document.getElementById('input-terra-arrend-vrarrend')?.value) || 0;
+  const taHa = parseFloat(document.getElementById('input-terra-arrend-ha')?.value) || 0;
+  const taPeriodo = parseFloat(document.getElementById('input-terra-arrend-periodo')?.value) || 0;
+  const totalTerraArrendada = taVrArrend * taHa * taPeriodo;
+  setText('lbl-terra-arrend-total', formatMoney(totalTerraArrendada));
+
+  // Produção Total
+  const hectaresTotais = tpHa + taHa;
+  const prodTotal = prodTotalInput > 0 ? prodTotalInput : (prodHa * hectaresTotais);
 
   // 1. Total Insumos (Variável)
   const totalInsumos = insumos.reduce((sum, item) => sum + (item.qtd * item.valorUnit), 0);
@@ -444,12 +581,12 @@ function calculateAll() {
   const totalMOP = mopList.reduce((sum, item) => sum + (item.qtd * item.salario * item.meses), 0);
 
   // 3. Mão de Obra Temporária (Variável)
-  const moTempQtd = parseFloat(document.getElementById('input-mo-temp-qtd')?.value) || 0;
-  const moTempDH = parseFloat(document.getElementById('input-mo-temp-dh')?.value) || 0;
-  const moTempValor = parseFloat(document.getElementById('input-mo-temp-valor')?.value) || 0;
-  const totalMOTemp = moTempQtd * moTempDH * moTempValor;
+  const totalMOTemp = motempList.reduce((sum, item) => sum + (item.qtd * item.quantDH * item.valorDH), 0);
 
-  // 4. Benfeitorias (Dbenf e Cobenf)
+  // 4. Horas Extras (Variável)
+  const totalHE = heList.reduce((sum, item) => sum + (item.trab * item.salario * item.quant), 0);
+
+  // 5. Benfeitorias (Dbenf e Cobenf)
   let Dbenf = 0;
   let Cobenf = 0;
   benfList.forEach(b => {
@@ -460,7 +597,7 @@ function calculateAll() {
     Cobenf += ((b.valor + b.valorFinal) / 2) * taxaJuros * fatorUso;
   });
 
-  // 5. Máquinas e Equipamentos (Dmaq/eq e Comaq/e)
+  // 6. Máquinas e Equipamentos (Dmaq/eq e Comaq/e)
   let Dmaq = 0;
   let Comaq = 0;
   maqList.forEach(m => {
@@ -471,34 +608,25 @@ function calculateAll() {
     Comaq += ((m.valor + m.valorFinal) / 2) * taxaJuros * fatorUso;
   });
 
-  // 6. Custo da Terra
-  const terraHa = parseFloat(document.getElementById('input-terra-ha')?.value) || 0;
-  const terraArrendValor = parseFloat(document.getElementById('input-terra-arrend-valor')?.value) || 0;
-  const terraTipo = document.getElementById('input-terra-tipo')?.value || 'propria';
-
-  let terraCustoFixo = 0;
-  let terraCustoVariavel = 0;
-  if (terraTipo === 'propria') {
-    terraCustoFixo = terraHa * terraArrendValor;
-  } else {
-    terraCustoVariavel = terraHa * terraArrendValor;
-  }
-
   // TOTIS DOS CUSTOS DE GABARITO BRUNO
-  const CFT = totalMOP + Dbenf + Cobenf + Dmaq + Comaq + terraCustoFixo;
-  const CVT = totalInsumos + totalMOTemp + terraCustoVariavel;
+  const CFT = totalMOP + Dbenf + Cobenf + Dmaq + Comaq + totalTerraPropria;
+  const CVT = totalInsumos + totalMOTemp + totalHE + totalTerraArrendada;
   const CT = CFT + CVT;
   const Cop = CVT + Dbenf + Dmaq + totalMOP;
 
   const Copme = prodTotal > 0 ? Cop / prodTotal : 0;
   const Ctme = prodTotal > 0 ? CT / prodTotal : 0;
 
-  const RBT = prodTotal * precoUnitLiquido;
+  const RBT = prodTotal * precoUnitBruto;
   const RLT = RBT - CT;
   const Rlop = RBT - Cop;
 
-  const PN = precoUnitLiquido > 0 ? CT / precoUnitLiquido : 0;
+  const PN = precoUnitBruto > 0 ? CT / precoUnitBruto : 0;
   const MS = prodTotal > 0 ? ((prodTotal - PN) / prodTotal) * 100 : 0;
+
+  // Especulação (Imagem: 762 sc., 31.77%)
+  const especulacaoSc = prodTotal - PN;
+  const especulacaoPct = MS;
 
   const lucratividade = RBT > 0 ? (RLT / RBT) * 100 : 0;
   const rentabilidade = CT > 0 ? (RLT / CT) * 100 : 0;
@@ -508,6 +636,9 @@ function calculateAll() {
   setText('res-ct', formatMoney(CT));
   setText('res-rlt', formatMoney(RLT));
   setText('res-rlop', formatMoney(Rlop));
+
+  setText('res-especulacao-sc', `${especulacaoSc.toFixed(0)} sc.`);
+  setText('res-especulacao-pct', `${especulacaoPct.toFixed(2)}%`);
 
   setText('res-dbenf', formatMoney(Dbenf));
   setText('res-cobenf', formatMoney(Cobenf));
@@ -521,20 +652,20 @@ function calculateAll() {
   setText('res-copme', formatMoney(Copme));
   setText('res-ctme', formatMoney(Ctme));
 
-  const unMedida = document.getElementById('input-unidade')?.value || 'unid';
+  const unMedida = document.getElementById('input-unidade')?.value || 'sc.';
   setText('res-pn', `${PN.toFixed(1)} ${unMedida}`);
   setText('res-ms', `${MS.toFixed(1)}%`);
   setText('res-lucratividade', `${lucratividade.toFixed(1)}%`);
   setText('res-rentabilidade', `${rentabilidade.toFixed(1)}%`);
 
   updateRiskMeter(MS, RLT, Rlop);
-  renderSensitivityTable(prodTotal, CT, precoUnitLiquido);
+  renderSensitivityTable(prodTotal, CT, precoUnitBruto);
   updateChart(CFT, CVT, RLT > 0 ? RLT : 0);
 
   return {
-    cultura, unMedida, prodTotal, precoUnitBruto, precoUnitLiquido,
+    cultura, unMedida, prodTotal, precoUnitBruto,
     CFT, CVT, CT, Cop, Copme, Ctme, RBT, RLT, Rlop, PN, MS, lucratividade, rentabilidade,
-    Dbenf, Cobenf, Dmaq, Comaq
+    Dbenf, Cobenf, Dmaq, Comaq, especulacaoSc, especulacaoPct
   };
 }
 
@@ -600,7 +731,7 @@ function shareWhatsApp() {
 🔴 *Custo Total (CT):* ${formatMoney(data.CT)}
 💚 *Lucro Líquido Total:* ${formatMoney(data.RLT)}
 🎯 *Ponto de Nivelamento:* ${data.PN.toFixed(1)} ${data.unMedida}
-📊 *Lucratividade:* ${data.lucratividade.toFixed(1)}% | *Rentabilidade:* ${data.rentabilidade.toFixed(1)}%
+📈 *Especulação:* ${data.especulacaoSc.toFixed(0)} sc. (${data.especulacaoPct.toFixed(2)}%)
 
 _Calculado via AgroCusto Pro App_`;
 
@@ -613,19 +744,15 @@ function exportToCSV() {
   let csv = `Item;Valor\n`;
   csv += `Cultura;${data.cultura}\n`;
   csv += `Producao Total;${data.prodTotal} ${data.unMedida}\n`;
-  csv += `Preco Unitario Bruto;${data.precoUnitBruto}\n`;
-  csv += `Preco Unitario Liquido;${data.precoUnitLiquido}\n`;
-  csv += `Depreciacao Benfeitorias (Dbenf);${data.Dbenf}\n`;
-  csv += `Custo Oportunidade Benfeitorias (Cobenf);${data.Cobenf}\n`;
-  csv += `Depreciacao Maquinas (Dmaq/eq);${data.Dmaq}\n`;
-  csv += `Custo Oportunidade Maquinas (Comaq/e);${data.Comaq}\n`;
+  csv += `Preco Unitario;${data.precoUnitBruto}\n`;
   csv += `Custo Fixo Total (CFT);${data.CFT}\n`;
   csv += `Custo Variavel Total (CVT);${data.CVT}\n`;
   csv += `Custo Total (CT);${data.CT}\n`;
   csv += `Renda Bruta Total (RBT);${data.RBT}\n`;
   csv += `Lucro Liquido Total (RLT);${data.RLT}\n`;
   csv += `Ponto de Nivelamento;${data.PN.toFixed(1)}\n`;
-  csv += `Margem de Seguranca (%);${data.MS.toFixed(1)}\n`;
+  csv += `Especulacao (Sacas);${data.especulacaoSc.toFixed(0)}\n`;
+  csv += `Especulacao (%);${data.especulacaoPct.toFixed(2)}\n`;
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
@@ -647,9 +774,8 @@ function saveCurrentSimulation() {
     unidade: document.getElementById('input-unidade').value,
     prodTotal: document.getElementById('input-prod-total').value,
     precoUnit: document.getElementById('input-preco-unitario').value,
-    periodo: document.getElementById('input-periodo-meses').value,
     taxaJuros: document.getElementById('input-taxa-juros').value,
-    insumos, mopList, benfList, maqList,
+    insumos, mopList, motempList, heList, benfList, maqList,
     date: new Date().toLocaleDateString()
   };
 
@@ -703,16 +829,19 @@ function loadSavedSimulation(index) {
   document.getElementById('input-unidade').value = item.unidade;
   document.getElementById('input-prod-total').value = item.prodTotal;
   document.getElementById('input-preco-unitario').value = item.precoUnit;
-  document.getElementById('input-periodo-meses').value = item.periodo;
   document.getElementById('input-taxa-juros').value = item.taxaJuros;
 
   insumos = item.insumos || [];
   mopList = item.mopList || [];
+  motempList = item.motempList || [];
+  heList = item.heList || [];
   benfList = item.benfList || [];
   maqList = item.maqList || [];
 
   renderInsumosTable();
   renderMOPTable();
+  renderMOTempTable();
+  renderHETable();
   renderBenfTable();
   renderMaqTable();
   calculateAll();
@@ -756,6 +885,7 @@ function renderCompareResults() {
         <p>Custo Total: <strong>${formatMoney(scenarioA.CT)}</strong></p>
         <p>Lucro Líquido: <strong class="text-emerald-500">${formatMoney(scenarioA.RLT)}</strong></p>
         <p>Break-even: <strong>${scenarioA.PN.toFixed(1)} ${scenarioA.unMedida}</strong></p>
+        <p>Especulação: <strong>${scenarioA.especulacaoSc.toFixed(0)} sc. (${scenarioA.especulacaoPct.toFixed(2)}%)</strong></p>
       ` : `<p class="text-slate-400">Nenhum cenário salvo em A.</p>`}
     </div>
     <div class="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border dark:border-slate-700">
@@ -765,6 +895,7 @@ function renderCompareResults() {
         <p>Custo Total: <strong>${formatMoney(scenarioB.CT)}</strong></p>
         <p>Lucro Líquido: <strong class="text-emerald-500">${formatMoney(scenarioB.RLT)}</strong></p>
         <p>Break-even: <strong>${scenarioB.PN.toFixed(1)} ${scenarioB.unMedida}</strong></p>
+        <p>Especulação: <strong>${scenarioB.especulacaoSc.toFixed(0)} sc. (${scenarioB.especulacaoPct.toFixed(2)}%)</strong></p>
       ` : `<p class="text-slate-400">Nenhum cenário salvo em B.</p>`}
     </div>
   `;
@@ -782,25 +913,39 @@ function renderCompareResults() {
   area.innerHTML = html;
 }
 
-// CARREGAR DADOS DE EXEMPLO DO GABARITO BRUNO
+// CARREGAR DADOS DE EXEMPLO (IMAGEM DO GABARITO BRUNO)
 function loadSampleData() {
   document.getElementById('input-cultura').value = "Milho Safra Comercial";
-  document.getElementById('input-unidade').value = "Sacas (60kg)";
-  document.getElementById('input-prod-total').value = "1200";
-  document.getElementById('input-preco-unitario').value = "78.00";
-  document.getElementById('input-periodo-meses').value = "12";
+  document.getElementById('input-unidade').value = "sc.";
+  document.getElementById('input-prod-ha').value = "60";
+  document.getElementById('input-prod-total').value = "2400";
+  document.getElementById('input-preco-unitario').value = "1090.00";
   document.getElementById('input-taxa-juros').value = "6.0";
 
+  // Terra Própria
+  document.getElementById('input-terra-propria-vrarrend').value = "5400.00";
+  document.getElementById('input-terra-propria-ha').value = "40.0";
+  document.getElementById('input-terra-propria-periodo').value = "1.00";
+
+  // Terra Arrendada
+  document.getElementById('input-terra-arrend-vrarrend').value = "0.00";
+  document.getElementById('input-terra-arrend-ha').value = "0.0";
+  document.getElementById('input-terra-arrend-periodo').value = "0.00";
+
   insumos = [
-    { id: 1, nome: "Sementes Híbridas de Alta Produtividade", qtd: 60, valorUnit: 420.00 },
-    { id: 2, nome: "Adubação NPK 08-28-16", qtd: 180, valorUnit: 210.00 },
-    { id: 3, nome: "Adubação de Cobertura (Ureia)", qtd: 120, valorUnit: 165.00 },
-    { id: 4, nome: "Herbicidas e Dessecantes", qtd: 70, valorUnit: 85.00 },
-    { id: 5, nome: "Insecticidas e Fungicidas", qtd: 50, valorUnit: 110.00 }
+    { id: 1, nome: "VALOR DOS INSUMOS", qtd: 1, valorUnit: 28000.00 }
   ];
 
   mopList = [
-    { id: 1, cargo: "Tratorista Especializado", qtd: 1, salario: 3100.00, meses: 12 }
+    { id: 1, cargo: "Trabalhador Permanente (8 pessoas, 13º salário)", qtd: 8, salario: 3000.00, meses: 13 }
+  ];
+
+  motempList = [
+    { id: 1, servico: "Trabalhador Temporário (300 diárias)", qtd: 300, quantDH: 1.0, valorDH: 150.00 }
+  ];
+
+  heList = [
+    { id: 1, trab: 0, unid: "dia", salario: 0.00, quant: 0 }
   ];
 
   benfList = [
@@ -816,11 +961,13 @@ function loadSampleData() {
 
   renderInsumosTable();
   renderMOPTable();
+  renderMOTempTable();
+  renderHETable();
   renderBenfTable();
   renderMaqTable();
   calculateAll();
 
-  alert("Dados de exemplo (Gabarito Bruno com Benfeitorias e Máquinas) carregados com sucesso!");
+  alert("Dados exatos da imagem do Gabarito Bruno (2400 sc., R$ 1.090,00/sc., Terra R$ 216.000,00, M.O.P. R$ 312.000,00) carregados!");
 }
 
 function initChart() {
