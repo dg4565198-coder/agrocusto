@@ -1,0 +1,17 @@
+{
+  "name": "AgroCusto - Calculadora de Custo de Produção",
+  "short_name": "AgroCusto",
+  "description": "Calculadora de Custo de Produção Agrícola e Análise de Viabilidade Econômica",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#15803d",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

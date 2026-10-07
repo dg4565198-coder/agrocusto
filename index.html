@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgroCusto Pro - Calculadora de Custo de Produção & Viabilidade</title>
+  <meta name="description" content="Calculadora de Custo de Produção Agrícola, Análise de Viabilidade Econômica, Simulação de Cenários e PWA Offline.">
+  <meta name="theme-color" content="#15803d">
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  
+  <!-- Tailwind CSS & Chart.js -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            agro: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    .step-active { @apply border-agro-600 text-agro-700 font-bold bg-agro-50 dark:bg-agro-900/40 dark:text-agro-400 dark:border-agro-500; }
+    .step-complete { @apply border-agro-600 bg-agro-600 text-white dark:bg-agro-700; }
+    
+    /* TOOLTIP STYLES */
+    .tooltip {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      cursor: help;
+    }
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 220px;
+      background-color: #0f172a;
+      color: #fff;
+      text-align: left;
+      border-radius: 6px;
+      padding: 8px 10px;
+      position: absolute;
+      z-index: 100;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -110px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      font-size: 11px;
+      font-weight: normal;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    }
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    @media print {
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      body { background: white !important; color: black !important; }
+      .bg-slate-900 { background: white !important; color: black !important; border: 1px solid #ccc !important; }
+      .text-white { color: black !important; }
+      .text-green-400, .text-emerald-300, .text-cyan-300 { color: #15803d !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans min-h-screen flex flex-col transition-colors duration-200">
+
+  <!-- HEADER PROFISSIONAL -->
+  <header class="bg-agro-800 dark:bg-slate-900 text-white shadow-lg sticky top-0 z-50 no-print border-b border-agro-700/50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+      <div class="flex items-center gap-3">
+        <div class="bg-white text-agro-800 p-2 rounded-xl font-black text-xl flex items-center gap-1.5 shadow-md">
+          <i data-lucide="sprout" class="w-6 h-6 text-agro-700"></i>
+          <span class="tracking-tight">AgroCusto</span>
+          <span class="text-[10px] bg-amber-500 text-slate-900 px-1.5 py-0.5 rounded font-bold uppercase">Pro</span>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight tracking-tight">Custo de Produção & Viabilidade</h1>
+          <p class="text-xs text-agro-200 dark:text-slate-400 hidden sm:block">Análise Econômica Agrícola, Ponderação de Riscos & Cenários</p>
+        </div>
+      </div>
+
+      <!-- CONTROLES DO HEADER -->
+      <div class="flex items-center gap-2">
+        
+        <!-- Toggle Dark/Light Mode -->
+        <button onclick="toggleTheme()" title="Alternar Tema Claro/Escuro" class="bg-agro-900/60 dark:bg-slate-800 hover:bg-agro-700 p-2 rounded-lg text-amber-300 transition flex items-center gap-1 border border-agro-600/50">
+          <i data-lucide="sun" id="theme-icon-sun" class="w-4 h-4 hidden"></i>
+          <i data-lucide="moon" id="theme-icon-moon" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Alternar Modo Guiado vs Painel -->
+        <div class="bg-agro-900/60 dark:bg-slate-800 p-1 rounded-lg flex items-center text-xs font-medium border border-agro-600/50">
+          <button id="btn-mode-wizard" onclick="setAppMode('wizard')" class="px-3 py-1.5 rounded-md transition flex items-center gap-1 bg-white text-agro-900 font-bold shadow">
+            <i data-lucide="list-ordered" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">Modo Guiado</span>
+          </button>
+          <button id="btn-mode-dashboard" onclick="setAppMode('dashboard')" class="px-3 py-1.5 rounded-md transition flex items-center gap-1 text-agro-100 hover:text-white">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">Painel Completo</span>
+          </button>
+        </div>
+
+        <!-- Botão Carregar Exemplo -->
+        <button onclick="loadSampleData()" title="Carregar Dados de Exemplo (Gabarito Bruno)" class="bg-agro-600 hover:bg-agro-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 border border-agro-400 transition shadow-sm">
+          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+          <span class="hidden md:inline">Dados Exemplo</span>
+        </button>
+
+        <!-- Botão Instalar PWA -->
+        <button id="btn-install-pwa" onclick="installPWA()" class="hidden bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow-md animate-bounce">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>Baixar App</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+    <!-- CABEÇALHO PARA IMPRESSÃO / PDF -->
+    <div class="hidden print-only p-4 border-b-2 border-slate-900 mb-4">
+      <div class="flex justify-between items-center">
+        <div>
+          <h1 class="text-2xl font-black text-slate-900">RELATÓRIO EXECUTIVO DE CUSTO DE PRODUÇÃO</h1>
+          <p class="text-sm text-slate-600">Modelo Econômico Agrícola • AgroCusto Pro</p>
+        </div>
+        <div class="text-right text-xs text-slate-500">
+          <p>Data do Relatório: <span id="print-date"></span></p>
+          <p>Propriedade / Cultura: <strong id="print-cultura-name"></strong></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- BANNER DE ORIENTAÇÃO -->
+    <div class="bg-blue-50 dark:bg-slate-900/80 border-l-4 border-blue-600 p-3 sm:p-4 rounded-r-xl shadow-sm flex items-start gap-3 no-print">
+      <i data-lucide="info" class="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5"></i>
+      <div class="text-xs sm:text-sm text-blue-900 dark:text-blue-200">
+        <strong>Modo de Uso:</strong> Preencha os valores de entrada e altere qualquer premissa. Os indicadores de <strong>Custos Fixos, Variáveis, Margem Bruta, Ponto de Nivelamento, Riscos e Rentabilidade</strong> recalculam em tempo real.
+      </div>
+    </div>
+
+    <!-- NAVEGAÇÃO MODO GUIADO (WIZARD STEPS) -->
+    <div id="wizard-stepper" class="no-print bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div class="flex justify-between items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+        <button onclick="goToStep(1)" id="step-btn-1" class="step-active flex-1 min-w-[120px] p-2 rounded-lg border text-center transition flex flex-col items-center gap-1">
+          <span class="text-xs font-semibold">1. Produção</span>
+        </button>
+        <div class="w-4 h-0.5 bg-slate-300 dark:bg-slate-700"></div>
+        <button onclick="goToStep(2)" id="step-btn-2" class="flex-1 min-w-[120px] p-2 rounded-lg border text-slate-500 dark:text-slate-400 text-center transition flex flex-col items-center gap-1">
+          <span class="text-xs font-semibold">2. Insumos</span>
+        </button>
+        <div class="w-4 h-0.5 bg-slate-300 dark:bg-slate-700"></div>
+        <button onclick="goToStep(3)" id="step-btn-3" class="flex-1 min-w-[120px] p-2 rounded-lg border text-slate-500 dark:text-slate-400 text-center transition flex flex-col items-center gap-1">
+          <span class="text-xs font-semibold">3. Mão de Obra</span>
+        </button>
+        <div class="w-4 h-0.5 bg-slate-300 dark:bg-slate-700"></div>
+        <button onclick="goToStep(4)" id="step-btn-4" class="flex-1 min-w-[120px] p-2 rounded-lg border text-slate-500 dark:text-slate-400 text-center transition flex flex-col items-center gap-1">
+          <span class="text-xs font-semibold">4. Máq., Benf. & Terra</span>
+        </button>
+        <div class="w-4 h-0.5 bg-slate-300 dark:bg-slate-700"></div>
+        <button onclick="goToStep(5)" id="step-btn-5" class="flex-1 min-w-[120px] p-2 rounded-lg border text-slate-500 dark:text-slate-400 text-center transition flex flex-col items-center gap-1">
+          <span class="text-xs font-semibold">5. Análise de Riscos</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- NAVEGAÇÃO MODO DASHBOARD (TABS) -->
+    <div id="dashboard-tabs" class="hidden no-print flex gap-2 border-b border-slate-300 dark:border-slate-800 overflow-x-auto pb-1">
+      <button onclick="switchDashTab('producao')" id="tab-producao" class="px-4 py-2 font-bold text-sm border-b-2 border-agro-600 text-agro-700 dark:text-agro-400 flex items-center gap-1.5">
+        <i data-lucide="package" class="w-4 h-4"></i> Produção & Mercado
+      </button>
+      <button onclick="switchDashTab('insumos')" id="tab-insumos" class="px-4 py-2 font-medium text-sm text-slate-600 dark:text-slate-400 border-b-2 border-transparent flex items-center gap-1.5">
+        <i data-lucide="layers" class="w-4 h-4"></i> Insumos
+      </button>
+      <button onclick="switchDashTab('maodeobra')" id="tab-maodeobra" class="px-4 py-2 font-medium text-sm text-slate-600 dark:text-slate-400 border-b-2 border-transparent flex items-center gap-1.5">
+        <i data-lucide="users" class="w-4 h-4"></i> Mão de Obra
+      </button>
+      <button onclick="switchDashTab('bens')" id="tab-bens" class="px-4 py-2 font-medium text-sm text-slate-600 dark:text-slate-400 border-b-2 border-transparent flex items-center gap-1.5">
+        <i data-lucide="tractor" class="w-4 h-4"></i> Máquinas & Terra
+      </button>
+      <button onclick="switchDashTab('resultados')" id="tab-resultados" class="px-4 py-2 font-medium text-sm text-slate-600 dark:text-slate-400 border-b-2 border-transparent flex items-center gap-1.5">
+        <i data-lucide="pie-chart" class="w-4 h-4"></i> Análise de Cenários
+      </button>
+    </div>
+
+    <!-- ÁREA DE CONTEÚDO DOS FORMULÁRIOS E RESULTADOS -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- COLUNA DE FORMULÁRIOS (7 cols em desktop) -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <!-- ETAPA 1: DADOS DA PRODUÇÃO -->
+        <section id="section-producao" class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+          <div class="border-b dark:border-slate-800 pb-3 flex justify-between items-center">
+            <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <i data-lucide="sprout" class="w-5 h-5 text-agro-600"></i>
+              Dados Gerais de Produção e Mercado
+            </h2>
+            <span class="text-xs bg-agro-100 dark:bg-agro-900/60 text-agro-800 dark:text-agro-300 px-2.5 py-0.5 rounded-full font-semibold">Parâmetros</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Cultura / Atividade</label>
+              <input type="text" id="input-cultura" value="Milho / Soja / Pecuária" onchange="calculateAll()" class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg p-2 text-sm focus:ring-2 focus:ring-agro-500 focus:outline-none">
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Unidade de Medida</label>
+              <input type="text" id="input-unidade" value="Sacas (60kg)" onchange="calculateAll()" class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg p-2 text-sm focus:ring-2 focus:ring-agro-500 focus:outline-none">
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Produção Total Estimada</label>
+              <input type="number" id="input-prod-total" value="1000" oninput="calculateAll()" class="w-full border border-agro-400 bg-agro-50/40 dark:bg-slate-800 rounded-lg p-2 text-sm font-bold text-agro-900 dark:text-agro-300 focus:ring-2 focus:ring-agro-500 focus:outline-none">
+              <span class="text-[11px] text-slate-500 dark:text-slate-400">Quantidade total colhida/produzida</span>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Preço de Mercado por Unidade (R$)</label>
+              <input type="number" id="input-preco-unitario" value="85.00" step="0.01" oninput="calculateAll()" class="w-full border border-agro-400 bg-agro-50/40 dark:bg-slate-800 rounded-lg p-2 text-sm font-bold text-agro-900 dark:text-agro-300 focus:ring-2 focus:ring-agro-500 focus:outline-none">
+              <span class="text-[11px] text-slate-500 dark:text-slate-400">Valor estimado de venda</span>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Período de Produção (Meses)</label>
+              <input type="number" id="input-periodo-meses" value="12" oninput="calculateAll()" class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg p-2 text-sm focus:ring-2 focus:ring-agro-500 focus:outline-none">
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Custo de Oportunidade do Capital (% a.a.)
+                <span class="tooltip"><i data-lucide="help-circle" class="w-3.5 h-3.5 text-slate-400 ml-0.5"></i>
+                  <span class="tooltiptext">Taxa de juros anual para remuneração do capital investido em máquinas, benfeitorias e terra.</span>
+                </span>
+              </label>
+              <input type="number" id="input-taxa-juros" value="6.0" step="0.1" oninput="calculateAll()" class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg p-2 text-sm focus:ring-2 focus:ring-agro-500 focus:outline-none">
+            </div>
+          </div>
+        </section>
+
+        <!-- ETAPA 2: INSUMOS -->
+        <section id="section-insumos" class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+          <div class="border-b dark:border-slate-800 pb-3 flex justify-between items-center">
+            <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <i data-lucide="layers" class="w-5 h-5 text-agro-600"></i>
+              Custos de Insumos (Variáveis)
+            </h2>
+            <button onclick="addInsumoRow()" class="text-xs bg-agro-700 hover:bg-agro-600 text-white font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 transition shadow-sm">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Adicionar Insumo
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border-b dark:border-slate-700">
+                  <th class="p-2">Item / Descrição</th>
+                  <th class="p-2 w-20">Qtd.</th>
+                  <th class="p-2 w-28">Valor Unit. (R$)</th>
+                  <th class="p-2 w-28 text-right">Total (R$)</th>
+                  <th class="p-2 w-10 text-center"></th>
+                </tr>
+              </thead>
+              <tbody id="tbl-insumos-body"></tbody>
+              <tfoot>
+                <tr class="bg-agro-50 dark:bg-agro-950/50 font-bold border-t border-agro-200 dark:border-agro-800">
+                  <td colspan="3" class="p-2 text-right text-slate-800 dark:text-slate-200">Total de Insumos:</td>
+                  <td id="lbl-total-insumos" class="p-2 text-right text-agro-700 dark:text-agro-400 text-sm">R$ 0,00</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </section>
+
+        <!-- ETAPA 3: MÃO DE OBRA -->
+        <section id="section-maodeobra" class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+          <div class="border-b dark:border-slate-800 pb-3 flex justify-between items-center">
+            <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <i data-lucide="users" class="w-5 h-5 text-agro-600"></i>
+              Mão de Obra (Permanente e Temporária)
+            </h2>
+          </div>
+
+          <!-- Mão de Obra Permanente (Fixo) -->
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">A) Mão de Obra Permanente (Custo Fixo)</h3>
+              <button onclick="addMOPRow()" class="text-[11px] bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-slate-800 dark:text-slate-200 px-2.5 py-1 rounded font-semibold flex items-center gap-1">
+                <i data-lucide="plus" class="w-3 h-3"></i> Adicionar Cargo
+              </button>
+            </div>
+            <table class="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-100 dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300">
+                  <th class="p-2">Cargo / Função</th>
+                  <th class="p-2 w-16">Qtd</th>
+                  <th class="p-2 w-24">Salário (R$)</th>
+                  <th class="p-2 w-20">Meses</th>
+                  <th class="p-2 w-28 text-right">Total (R$)</th>
+                  <th class="p-2 w-8"></th>
+                </tr>
+              </thead>
+              <tbody id="tbl-mop-body"></tbody>
+            </table>
+          </div>
+
+          <hr class="border-slate-200 dark:border-slate-800">
+
+          <!-- Mão de Obra Temporária (Variável) -->
+          <div class="space-y-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">B) Mão de Obra Temporária & Horas Extras (Custo Variável)</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-lg border dark:border-slate-700">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400">Trabalhadores Temporários</label>
+                <input type="number" id="input-mo-temp-qtd" value="2" oninput="calculateAll()" class="w-full border dark:border-slate-700 rounded p-1.5 text-xs bg-white dark:bg-slate-900">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400">Diárias / Horas Totais</label>
+                <input type="number" id="input-mo-temp-dh" value="30" oninput="calculateAll()" class="w-full border dark:border-slate-700 rounded p-1.5 text-xs bg-white dark:bg-slate-900">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400">Valor Unitário (R$/dia ou h)</label>
+                <input type="number" id="input-mo-temp-valor" value="120.00" step="0.01" oninput="calculateAll()" class="w-full border dark:border-slate-700 rounded p-1.5 text-xs bg-white dark:bg-slate-900">
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ETAPA 4: MÁQUINAS, BENFEITORIAS E TERRA -->
+        <section id="section-bens" class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+          <div class="border-b dark:border-slate-800 pb-3 flex justify-between items-center">
+            <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <i data-lucide="tractor" class="w-5 h-5 text-agro-600"></i>
+              Máquinas, Equipamentos, Benfeitorias e Terra
+            </h2>
+          </div>
+
+          <!-- Máquinas e Equipamentos -->
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">A) Máquinas e Equipamentos (Depreciação e Custo Oportunidade)</h3>
+              <button onclick="addMaqRow()" class="text-[11px] bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-slate-800 dark:text-slate-200 px-2.5 py-1 rounded font-semibold flex items-center gap-1">
+                <i data-lucide="plus" class="w-3 h-3"></i> Adicionar Máquina
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs text-left border-collapse">
+                <thead>
+                  <tr class="bg-slate-100 dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300">
+                    <th class="p-2">Equipamento</th>
+                    <th class="p-2 w-24">Valor (R$)</th>
+                    <th class="p-2 w-16">Vida Útil (anos)</th>
+                    <th class="p-2 w-24 text-right">Depreciação/ano</th>
+                    <th class="p-2 w-24 text-right">C. Oportunidade</th>
+                    <th class="p-2 w-8"></th>
+                  </tr>
+                </thead>
+                <tbody id="tbl-maq-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <hr class="border-slate-200 dark:border-slate-800">
+
+          <!-- Terra Própria vs Arrendada -->
+          <div class="space-y-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">B) Custo da Terra (Própria vs Arrendada)</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-lg border dark:border-slate-700">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400">Hectares Utilizados</label>
+                <input type="number" id="input-terra-ha" value="50" oninput="calculateAll()" class="w-full border dark:border-slate-700 rounded p-1.5 text-xs bg-white dark:bg-slate-900">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400">Valor de Arrendamento (R$/ha/ano)</label>
+                <input type="number" id="input-terra-arrend-valor" value="600.00" step="0.01" oninput="calculateAll()" class="w-full border dark:border-slate-700 rounded p-1.5 text-xs bg-white dark:bg-slate-900">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400">Tipo de Uso da Terra</label>
+                <select id="input-terra-tipo" onchange="calculateAll()" class="w-full border dark:border-slate-700 rounded p-1.5 text-xs bg-white dark:bg-slate-900">
+                  <option value="propria">Terra Própria (Custo de Oportunidade)</option>
+                  <option value="arrendada">Terra Arrendada (Custo Variável Operacional)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- BOTÕES DE NAVEGAÇÃO DO MODO GUIADO -->
+        <div id="wizard-nav-btns" class="flex justify-between items-center pt-2 no-print">
+          <button id="btn-prev-step" onclick="prevStep()" class="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-slate-800 dark:text-slate-200 font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-1 transition">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar
+          </button>
+          <button id="btn-next-step" onclick="nextStep()" class="bg-agro-700 hover:bg-agro-600 text-white font-bold px-5 py-2 rounded-lg text-sm flex items-center gap-1 shadow-md transition">
+            <span>Avançar Próxima Etapa</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- COLUNA DE RESULTADOS E PAINEL FIXO (5 cols em desktop) -->
+      <div id="section-resultados" class="lg:col-span-5 space-y-6 lg:sticky lg:top-20">
+
+        <!-- RESUMO EXECUTIVO COM MEDIDOR DE RISCO -->
+        <div class="bg-slate-900 text-white p-5 rounded-2xl shadow-xl space-y-4 border border-slate-800">
+          <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+            <h2 class="font-bold text-base flex items-center gap-2 text-agro-400">
+              <i data-lucide="line-chart" class="w-5 h-5"></i>
+              Resumo Financeiro & Riscos
+            </h2>
+            <button onclick="window.print()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-1.5 no-print transition">
+              <i data-lucide="printer" class="w-3.5 h-3.5"></i> Imprimir/PDF
+            </button>
+          </div>
+
+          <!-- DADOS CHAVE DOS RESULTADOS -->
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div class="bg-slate-800/90 p-3 rounded-xl border border-slate-700/70">
+              <span class="text-slate-400 block text-[11px] font-medium">Renda Bruta Total (RBT)</span>
+              <span id="res-rbt" class="text-base font-black text-agro-400">R$ 0,00</span>
+            </div>
+
+            <div class="bg-slate-800/90 p-3 rounded-xl border border-slate-700/70">
+              <span class="text-slate-400 block text-[11px] font-medium">Custo Total (CT)</span>
+              <span id="res-ct" class="text-base font-black text-rose-400">R$ 0,00</span>
+            </div>
+
+            <div class="bg-slate-800/90 p-3 rounded-xl border border-slate-700/70">
+              <span class="text-slate-400 block text-[11px] font-medium">Lucro Líquido Total (RLT)</span>
+              <span id="res-rlt" class="text-base font-black text-emerald-300">R$ 0,00</span>
+            </div>
+
+            <div class="bg-slate-800/90 p-3 rounded-xl border border-slate-700/70">
+              <span class="text-slate-400 block text-[11px] font-medium">Lucro Operacional (Rlop)</span>
+              <span id="res-rlop" class="text-base font-black text-cyan-300">R$ 0,00</span>
+            </div>
+          </div>
+
+          <!-- GAUGER / MEDIDOR VISUAL DE RISCO -->
+          <div class="space-y-1.5 bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-300 font-semibold flex items-center gap-1">
+                <i data-lucide="shield-alert" class="w-4 h-4 text-amber-400"></i> Nível de Segurança do Projeto
+              </span>
+              <span id="lbl-gauge-percent" class="font-bold text-amber-400">0%</span>
+            </div>
+            <div class="w-full bg-slate-700 h-3 rounded-full overflow-hidden flex">
+              <div id="gauge-bar-red" class="bg-rose-500 h-full transition-all duration-500" style="width: 30%"></div>
+              <div id="gauge-bar-yellow" class="bg-amber-400 h-full transition-all duration-500" style="width: 40%"></div>
+              <div id="gauge-bar-green" class="bg-emerald-500 h-full transition-all duration-500" style="width: 30%"></div>
+            </div>
+            <div class="flex justify-between text-[10px] text-slate-400 font-medium">
+              <span>Alto Risco</span>
+              <span>Atenção</span>
+              <span>Zona Segura</span>
+            </div>
+          </div>
+
+          <!-- STATUS DE VIABILIDADE -->
+          <div id="card-status-viabilidade" class="p-3 rounded-xl text-center font-bold text-xs bg-agro-900/80 border border-agro-500 text-agro-200">
+            PROJETO LUCRATIVO E VIÁVEL
+          </div>
+        </div>
+
+        <!-- DETALHAMENTO DOS CUSTOS E MARGENS -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 border-b dark:border-slate-800 pb-2">Custos Médios & Ponto de Nivelamento</h3>
+
+          <div class="space-y-2 text-xs">
+            <div class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+              <span class="text-slate-600 dark:text-slate-400">
+                A) Custo Fixo Total (CFT):
+                <span class="tooltip"><i data-lucide="help-circle" class="w-3 h-3 text-slate-400"></i>
+                  <span class="tooltiptext">Soma das depreciações, custo de oportunidade do capital e mão de obra permanente.</span>
+                </span>
+              </span>
+              <span id="res-cft" class="font-bold text-slate-800 dark:text-slate-200">R$ 0,00</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+              <span class="text-slate-600 dark:text-slate-400">B) Custo Variável Total (CVT):</span>
+              <span id="res-cvt" class="font-bold text-slate-800 dark:text-slate-200">R$ 0,00</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+              <span class="text-slate-600 dark:text-slate-400">D) Custo Operacional (Cop):</span>
+              <span id="res-cop" class="font-bold text-slate-800 dark:text-slate-200">R$ 0,00</span>
+            </div>
+            <div class="flex justify-between py-1.5 bg-slate-50 dark:bg-slate-800/60 px-2 rounded-lg">
+              <span class="text-slate-700 dark:text-slate-300 font-semibold">Custo Operacional Médio (por unid.):</span>
+              <span id="res-copme" class="font-bold text-slate-900 dark:text-white">R$ 0,00</span>
+            </div>
+            <div class="flex justify-between py-1.5 bg-slate-50 dark:bg-slate-800/60 px-2 rounded-lg">
+              <span class="text-slate-700 dark:text-slate-300 font-semibold">Custo Total Médio (por unid.):</span>
+              <span id="res-ctme" class="font-bold text-slate-900 dark:text-white">R$ 0,00</span>
+            </div>
+          </div>
+
+          <hr class="border-slate-200 dark:border-slate-800">
+
+          <!-- INDICADORES ECONÔMICOS -->
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border dark:border-slate-700">
+              <span class="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Ponto de Nivelamento</span>
+              <span id="res-pn" class="font-bold text-slate-900 dark:text-white text-sm">0 sacas</span>
+              <span class="text-[10px] text-slate-400 block">Produção mín. para zerar custo</span>
+            </div>
+
+            <div class="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border dark:border-slate-700">
+              <span class="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Margem de Segurança</span>
+              <span id="res-ms" class="font-bold text-slate-900 dark:text-white text-sm">0.0%</span>
+              <span class="text-[10px] text-slate-400 block">Folga até o ponto de equilíbrio</span>
+            </div>
+
+            <div class="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border dark:border-slate-700">
+              <span class="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Lucratividade (Lc)</span>
+              <span id="res-lucratividade" class="font-bold text-slate-900 dark:text-white text-sm">0.0%</span>
+              <span class="text-[10px] text-slate-400 block">Lucro sobre a Renda Bruta</span>
+            </div>
+
+            <div class="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border dark:border-slate-700">
+              <span class="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Rentabilidade (Rt)</span>
+              <span id="res-rentabilidade" class="font-bold text-slate-900 dark:text-white text-sm">0.0%</span>
+              <span class="text-[10px] text-slate-400 block">Retorno sobre o capital investido</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ANÁLISE DE SENSIBILIDADE DE PREÇO -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <i data-lucide="sliders" class="w-4 h-4 text-agro-600"></i> Simulação de Sensibilidade de Preço
+          </h3>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400">Impacto no Lucro Líquido de acordo com variações no preço de venda da saca:</p>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-100 dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300 border-b dark:border-slate-700">
+                  <th class="p-1.5">Variação</th>
+                  <th class="p-1.5">Preço (R$)</th>
+                  <th class="p-1.5 text-right">Lucro Total</th>
+                </tr>
+              </thead>
+              <tbody id="tbl-sensibilidade-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- GRÁFICO VISUAL DOS CUSTOS -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 no-print">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Composição dos Custos & Lucro</h3>
+          <div class="relative h-56 w-full">
+            <canvas id="chartCustos"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-slate-900 text-slate-400 text-xs py-4 border-t border-slate-800 mt-8 no-print">
+    <div class="max-w-7xl mx-auto px-4 flex flex-wrap justify-between items-center gap-2">
+      <div>
+        <strong>AgroCusto Pro</strong> &bull; Modelo Econômico Agrícola (Gabarito Bruno Soares).
+      </div>
+      <div>
+        PWA Habilitado &bull; Dark Mode &bull; Funciona Offline
+      </div>
+    </div>
+  </footer>
+
+  <!-- SCRIPT DA APLICAÇÃO -->
+  <script src="app.js"></script>
+
+  <!-- REGISTRO DO SERVICE WORKER (PWA) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').then(reg => {
+          console.log('Service Worker registrado com sucesso!', reg);
+        }).catch(err => {
+          console.log('Erro ao registrar Service Worker:', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
