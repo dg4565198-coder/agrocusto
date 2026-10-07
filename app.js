@@ -1,11 +1,13 @@
-// AgroCusto Pro - Logic & Formula Engine
+// AgroCusto Pro - Complete Logic, Calculations & Extensions
 
-// 1. Estado da Aplicação
 let currentStep = 1;
-let currentMode = 'wizard'; // 'wizard' ou 'dashboard'
+let currentMode = 'wizard';
 let deferredPrompt = null;
 let chartCustosInstance = null;
 let currentTheme = 'light';
+
+let scenarioA = null;
+let scenarioB = null;
 
 // Lista de Insumos
 let insumos = [
@@ -28,7 +30,6 @@ let maqList = [
   { id: 3, nome: "Pulverizador de Arasto 2000L", valor: 65000.00, vidaUtil: 8 }
 ];
 
-// DOM LOADED INICIALIZAÇÃO
 document.addEventListener('DOMContentLoaded', () => {
   renderInsumosTable();
   renderMOPTable();
@@ -37,11 +38,9 @@ document.addEventListener('DOMContentLoaded', () => {
   calculateAll();
   lucide.createIcons();
 
-  // Data atual para impressão
   const printDateEl = document.getElementById('print-date');
   if (printDateEl) printDateEl.textContent = new Date().toLocaleDateString('pt-BR');
 
-  // Escutar evento de instalação PWA
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
@@ -50,7 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// ALTERNAR TEMA CLARO / ESCURO
 function toggleTheme() {
   const html = document.documentElement;
   const sunIcon = document.getElementById('theme-icon-sun');
@@ -71,7 +69,6 @@ function toggleTheme() {
   }
 }
 
-// NAVEGAÇÃO DE MODO (WIZARD VS DASHBOARD)
 function setAppMode(mode) {
   currentMode = mode;
   const stepper = document.getElementById('wizard-stepper');
@@ -102,7 +99,6 @@ function setAppMode(mode) {
   }
 }
 
-// NAVEGAÇÃO WIZARD
 function goToStep(step) {
   currentStep = step;
   
@@ -152,7 +148,7 @@ function switchDashTab(tabKey) {
   }
 }
 
-// INSUMOS: RENDERIZAÇÃO E EDIÇÃO
+// INSUMOS
 function renderInsumosTable() {
   const tbody = document.getElementById('tbl-insumos-body');
   if (!tbody) return;
@@ -216,7 +212,7 @@ function removeInsumo(id) {
   calculateAll();
 }
 
-// MÃO DE OBRA PERMANENTE: RENDERIZAÇÃO
+// MÃO DE OBRA PERMANENTE
 function renderMOPTable() {
   const tbody = document.getElementById('tbl-mop-body');
   if (!tbody) return;
@@ -273,7 +269,7 @@ function removeMOP(id) {
   calculateAll();
 }
 
-// MÁQUINAS: RENDERIZAÇÃO
+// MÁQUINAS
 function renderMaqTable() {
   const tbody = document.getElementById('tbl-maq-body');
   if (!tbody) return;
@@ -332,15 +328,22 @@ function removeMaq(id) {
   calculateAll();
 }
 
-// MOTOR PRINCIPAL DE CÁLCULOS DA PLANILHA DE GABARITO
+// MOTOR PRINCIPAL DE CÁLCULOS DA PLANILHA
 function calculateAll() {
   const cultura = document.getElementById('input-cultura')?.value || 'Atividade';
   const printCultura = document.getElementById('print-cultura-name');
   if (printCultura) printCultura.textContent = cultura;
 
   const prodTotal = parseFloat(document.getElementById('input-prod-total')?.value) || 0;
-  const precoUnit = parseFloat(document.getElementById('input-preco-unitario')?.value) || 0;
+  const precoUnitBruto = parseFloat(document.getElementById('input-preco-unitario')?.value) || 0;
   const taxaJuros = (parseFloat(document.getElementById('input-taxa-juros')?.value) || 6.0) / 100;
+
+  // Deduções e Impostos
+  const deducaoFrete = parseFloat(document.getElementById('input-deducao-frete')?.value) || 0;
+  const deducaoArmaz = parseFloat(document.getElementById('input-deducao-armazenagem')?.value) || 0;
+  const deducaoFunruralPct = (parseFloat(document.getElementById('input-deducao-funrural')?.value) || 0) / 100;
+
+  const precoUnitLiquido = (precoUnitBruto * (1 - deducaoFunruralPct)) - deducaoFrete - deducaoArmaz;
 
   // 1. Total Insumos (Variável)
   const totalInsumos = insumos.reduce((sum, item) => sum + (item.qtd * item.valorUnit), 0);
@@ -385,13 +388,13 @@ function calculateAll() {
   const Copme = prodTotal > 0 ? Cop / prodTotal : 0;
   const Ctme = prodTotal > 0 ? CT / prodTotal : 0;
 
-  // Receitas & Lucros
-  const RBT = prodTotal * precoUnit;
+  // Receitas & Lucros Líquidos (Pós-Deduções)
+  const RBT = prodTotal * precoUnitLiquido;
   const RLT = RBT - CT;
   const Rlop = RBT - Cop;
 
   // Ponto de Nivelamento (PN) e Margem de Segurança (MS %)
-  const PN = precoUnit > 0 ? CT / precoUnit : 0;
+  const PN = precoUnitLiquido > 0 ? CT / precoUnitLiquido : 0;
   const MS = prodTotal > 0 ? ((prodTotal - PN) / prodTotal) * 100 : 0;
 
   const lucratividade = RBT > 0 ? (RLT / RBT) * 100 : 0;
@@ -415,17 +418,17 @@ function calculateAll() {
   setText('res-lucratividade', `${lucratividade.toFixed(1)}%`);
   setText('res-rentabilidade', `${rentabilidade.toFixed(1)}%`);
 
-  // ATUALIZAR GAUGE DE RISCO E MEDIDOR VISUAL
   updateRiskMeter(MS, RLT, Rlop);
-
-  // SIMULAÇÃO DE SENSIBILIDADE DE PREÇO
-  renderSensitivityTable(prodTotal, CT, precoUnit);
-
-  // ATUALIZAR GRÁFICO
+  renderSensitivityTable(prodTotal, CT, precoUnitLiquido);
   updateChart(CFT, CVT, RLT > 0 ? RLT : 0);
+
+  // Retornar objeto de dados para exportação/comparação
+  return {
+    cultura, unMedida, prodTotal, precoUnitBruto, precoUnitLiquido,
+    CFT, CVT, CT, Cop, Copme, Ctme, RBT, RLT, Rlop, PN, MS, lucratividade, rentabilidade
+  };
 }
 
-// ATUALIZAR MEDIDOR DE RISCO (GAUGE)
 function updateRiskMeter(msPercent, rlt, rlop) {
   const lblPercent = document.getElementById('lbl-gauge-percent');
   const cardStatus = document.getElementById('card-status-viabilidade');
@@ -450,7 +453,6 @@ function updateRiskMeter(msPercent, rlt, rlop) {
   }
 }
 
-// TABELA DE SENSIBILIDADE DE PREÇO
 function renderSensitivityTable(prodTotal, CT, precoBase) {
   const tbody = document.getElementById('tbl-sensibilidade-body');
   if (!tbody) return;
@@ -478,6 +480,195 @@ function renderSensitivityTable(prodTotal, CT, precoBase) {
     `;
     tbody.appendChild(tr);
   });
+}
+
+// COMPARTILHAR NO WHATSAPP
+function shareWhatsApp() {
+  const data = calculateAll();
+  const text = `🌱 *RESUMO DE CUSTO & VIABILIDADE AGRÍCOLA (AgroCusto Pro)*
+📍 *Cultura/Atividade:* ${data.cultura}
+📦 *Produção Estimada:* ${data.prodTotal} ${data.unMedida}
+💰 *Renda Bruta Total:* ${formatMoney(data.RBT)}
+🔴 *Custo Total (CT):* ${formatMoney(data.CT)}
+💚 *Lucro Líquido Total:* ${formatMoney(data.RLT)}
+🎯 *Ponto de Nivelamento:* ${data.PN.toFixed(1)} ${data.unMedida}
+📊 *Lucratividade:* ${data.lucratividade.toFixed(1)}% | *Rentabilidade:* ${data.rentabilidade.toFixed(1)}%
+
+_Calculado via AgroCusto Pro App_`;
+
+  const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank');
+}
+
+// EXPORTAR PARA EXCEL / CSV
+function exportToCSV() {
+  const data = calculateAll();
+  let csv = `Item;Valor\n`;
+  csv += `Cultura;${data.cultura}\n`;
+  csv += `Producao Total;${data.prodTotal} ${data.unMedida}\n`;
+  csv += `Preco Unitario Bruto;${data.precoUnitBruto}\n`;
+  csv += `Preco Unitario Liquido;${data.precoUnitLiquido}\n`;
+  csv += `Custo Fixo Total (CFT);${data.CFT}\n`;
+  csv += `Custo Variavel Total (CVT);${data.CVT}\n`;
+  csv += `Custo Total (CT);${data.CT}\n`;
+  csv += `Renda Bruta Total (RBT);${data.RBT}\n`;
+  csv += `Lucro Liquido Total (RLT);${data.RLT}\n`;
+  csv += `Ponto de Nivelamento;${data.PN.toFixed(1)}\n`;
+  csv += `Margem de Seguranca (%);${data.MS.toFixed(1)}\n`;
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.setAttribute('download', `AgroCusto_${data.cultura.replace(/\s+/g, '_')}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// GERENCIADOR DE SAFRAS (SALVAR / CARREGAR)
+function saveCurrentSimulation() {
+  const cultura = document.getElementById('input-cultura')?.value || 'Safra';
+  const name = prompt("Digite um nome para identificar esta safra:", `${cultura} - ${new Date().toLocaleDateString()}`);
+  if (!name) return;
+
+  const currentData = {
+    name,
+    cultura: document.getElementById('input-cultura').value,
+    unidade: document.getElementById('input-unidade').value,
+    prodTotal: document.getElementById('input-prod-total').value,
+    precoUnit: document.getElementById('input-preco-unitario').value,
+    periodo: document.getElementById('input-periodo-meses').value,
+    taxaJuros: document.getElementById('input-taxa-juros').value,
+    insumos, mopList, maqList,
+    date: new Date().toLocaleDateString()
+  };
+
+  let saved = JSON.parse(localStorage.getItem('agrocusto_safras') || '[]');
+  saved.push(currentData);
+  localStorage.setItem('agrocusto_safras', JSON.stringify(saved));
+  alert(`Safra "${name}" salva com sucesso!`);
+}
+
+function showSavedSimulationsModal() {
+  const modal = document.getElementById('modal-safras');
+  const listEl = document.getElementById('saved-simulations-list');
+  if (!modal || !listEl) return;
+
+  const saved = JSON.parse(localStorage.getItem('agrocusto_safras') || '[]');
+  listEl.innerHTML = '';
+
+  if (saved.length === 0) {
+    listEl.innerHTML = `<p class="text-slate-500 py-4 text-center">Nenhuma safra salva ainda.</p>`;
+  } else {
+    saved.forEach((item, index) => {
+      const div = document.createElement('div');
+      div.className = "p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border dark:border-slate-700 flex justify-between items-center";
+      div.innerHTML = `
+        <div>
+          <strong class="text-slate-800 dark:text-slate-100">${item.name}</strong>
+          <span class="block text-[11px] text-slate-500">${item.cultura} &bull; ${item.date}</span>
+        </div>
+        <div class="flex gap-1">
+          <button onclick="loadSavedSimulation(${index})" class="bg-agro-600 hover:bg-agro-500 text-white px-2.5 py-1 rounded text-xs font-semibold">Carregar</button>
+          <button onclick="deleteSavedSimulation(${index})" class="bg-rose-600 hover:bg-rose-500 text-white px-2 py-1 rounded text-xs font-semibold">Excluir</button>
+        </div>
+      `;
+      listEl.appendChild(tr);
+    });
+  }
+
+  modal.classList.remove('hidden');
+}
+
+function closeSavedSimulationsModal() {
+  document.getElementById('modal-safras')?.classList.add('hidden');
+}
+
+function loadSavedSimulation(index) {
+  const saved = JSON.parse(localStorage.getItem('agrocusto_safras') || '[]');
+  const item = saved[index];
+  if (!item) return;
+
+  document.getElementById('input-cultura').value = item.cultura;
+  document.getElementById('input-unidade').value = item.unidade;
+  document.getElementById('input-prod-total').value = item.prodTotal;
+  document.getElementById('input-preco-unitario').value = item.precoUnit;
+  document.getElementById('input-periodo-meses').value = item.periodo;
+  document.getElementById('input-taxa-juros').value = item.taxaJuros;
+
+  insumos = item.insumos || [];
+  mopList = item.mopList || [];
+  maqList = item.maqList || [];
+
+  renderInsumosTable();
+  renderMOPTable();
+  renderMaqTable();
+  calculateAll();
+
+  closeSavedSimulationsModal();
+  alert(`Safra "${item.name}" carregada com sucesso!`);
+}
+
+function deleteSavedSimulation(index) {
+  let saved = JSON.parse(localStorage.getItem('agrocusto_safras') || '[]');
+  saved.splice(index, 1);
+  localStorage.setItem('agrocusto_safras', JSON.stringify(saved));
+  showSavedSimulationsModal();
+}
+
+// COMPARADOR DE CENÁRIOS
+function openCompareModal() {
+  document.getElementById('modal-compare')?.classList.remove('hidden');
+  renderCompareResults();
+}
+
+function closeCompareModal() {
+  document.getElementById('modal-compare')?.classList.add('hidden');
+}
+
+function setScenario(type) {
+  const data = calculateAll();
+  if (type === 'A') scenarioA = data;
+  else scenarioB = data;
+  renderCompareResults();
+}
+
+function renderCompareResults() {
+  const area = document.getElementById('compare-results-area');
+  if (!area) return;
+
+  let html = `
+    <div class="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border dark:border-slate-700">
+      <h4 class="font-bold text-amber-500 mb-2 border-b dark:border-slate-700 pb-1">Cenário A</h4>
+      ${scenarioA ? `
+        <p>Cultura: <strong>${scenarioA.cultura}</strong></p>
+        <p>Custo Total: <strong>${formatMoney(scenarioA.CT)}</strong></p>
+        <p>Lucro Líquido: <strong class="text-emerald-500">${formatMoney(scenarioA.RLT)}</strong></p>
+        <p>Break-even: <strong>${scenarioA.PN.toFixed(1)} ${scenarioA.unMedida}</strong></p>
+      ` : `<p class="text-slate-400">Nenhum cenário salvo em A.</p>`}
+    </div>
+    <div class="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border dark:border-slate-700">
+      <h4 class="font-bold text-blue-500 mb-2 border-b dark:border-slate-700 pb-1">Cenário B</h4>
+      ${scenarioB ? `
+        <p>Cultura: <strong>${scenarioB.cultura}</strong></p>
+        <p>Custo Total: <strong>${formatMoney(scenarioB.CT)}</strong></p>
+        <p>Lucro Líquido: <strong class="text-emerald-500">${formatMoney(scenarioB.RLT)}</strong></p>
+        <p>Break-even: <strong>${scenarioB.PN.toFixed(1)} ${scenarioB.unMedida}</strong></p>
+      ` : `<p class="text-slate-400">Nenhum cenário salvo em B.</p>`}
+    </div>
+  `;
+
+  if (scenarioA && scenarioB) {
+    const diffLucro = scenarioB.RLT - scenarioA.RLT;
+    const winner = diffLucro > 0 ? 'Cenário B' : 'Cenário A';
+    html += `
+      <div class="col-span-2 bg-agro-900/80 border border-agro-500 p-3 rounded-xl text-center text-agro-200 font-bold">
+        🏆 O ${winner} é mais vantajoso (Diferença de ${formatMoney(Math.abs(diffLucro))} no lucro líquido)!
+      </div>
+    `;
+  }
+
+  area.innerHTML = html;
 }
 
 // CARREGAR DADOS DE EXEMPLO (GABARITO BRUNO)
@@ -514,7 +705,7 @@ function loadSampleData() {
   alert("Dados de exemplo (Gabarito Bruno) carregados com sucesso!");
 }
 
-// INICIALIZAR E ATUALIZAR GRÁFICO (CHART.JS)
+// INICIA GRÁFICO
 function initChart() {
   const ctx = document.getElementById('chartCustos')?.getContext('2d');
   if (!ctx) return;
@@ -547,7 +738,6 @@ function updateChart(cft, cvt, lucro) {
   }
 }
 
-// PROMPT DE INSTALAÇÃO PWA
 function installPWA() {
   if (deferredPrompt) {
     deferredPrompt.prompt();
@@ -560,7 +750,6 @@ function installPWA() {
   }
 }
 
-// UTILITIES
 function formatMoney(val) {
   return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
