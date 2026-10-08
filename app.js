@@ -553,13 +553,12 @@ function removeMaq(id) {
 }
 
 // MOTOR PRINCIPAL DE CÁLCULOS DO GABARITO (IMAGEM BRUNO)
-function calculateAll() {
+function calculateAll(source) {
   const cultura = document.getElementById('input-cultura')?.value || 'Atividade';
   const printCultura = document.getElementById('print-cultura-name');
   if (printCultura) printCultura.textContent = cultura;
 
   const prodHa = parseFloat(document.getElementById('input-prod-ha')?.value) || 0;
-  const prodTotalInput = parseFloat(document.getElementById('input-prod-total')?.value) || 0;
   const precoUnitBruto = parseFloat(document.getElementById('input-preco-unitario')?.value) || 0;
   const taxaJuros = (parseFloat(document.getElementById('input-taxa-juros')?.value) || 6.0) / 100;
 
@@ -579,11 +578,20 @@ function calculateAll() {
   const totalTerraArrendada = taVrArrend * taHa * taPeriodo;
   setText('lbl-terra-arrend-total', formatMoney(totalTerraArrendada));
 
-  // Produção Total
+  // Produção Total (Cálculo Automático Hectares x Prod/ha + Suporte a Edição Direta no Card)
   const hectaresTotais = tpHa + taHa;
-  const prodTotal = (prodTotalInput > 0) ? prodTotalInput : (prodHa * (hectaresTotais > 0 ? hectaresTotais : 1));
   const unMedida = document.getElementById('input-unidade')?.value || 'sc.';
-  setText('lbl-producao-total-outros', `${prodTotal.toFixed(0)} ${unMedida}`);
+  const inputProdTotal = document.getElementById('input-prod-total');
+
+  if (source !== 'manual' && inputProdTotal) {
+    const autoCalc = prodHa * (hectaresTotais > 0 ? hectaresTotais : 1);
+    if (autoCalc > 0) {
+      inputProdTotal.value = autoCalc.toFixed(0);
+    }
+  }
+
+  const prodTotal = parseFloat(inputProdTotal?.value) || 0;
+  setText('lbl-unidade-outros', unMedida);
 
   // 1. Total Insumos (Variável)
   const totalInsumosDet = insumos.reduce((sum, item) => sum + (item.qtd * item.valorUnit), 0);
