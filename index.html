@@ -157,6 +157,9 @@
         <button onclick="showSavedSimulationsModal()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-semibold px-2.5 py-1 rounded border flex items-center gap-1">
           <i data-lucide="folder-open" class="w-3.5 h-3.5"></i> Minhas Safras
         </button>
+        <button onclick="exportBackupJSON()" title="Exportar Backup em JSON" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-semibold px-2.5 py-1 rounded border flex items-center gap-1">
+          <i data-lucide="file-json" class="w-3.5 h-3.5 text-agro-600"></i> Backup JSON
+        </button>
       </div>
 
       <div class="flex items-center gap-2 text-xs">
@@ -792,6 +795,22 @@
       </div>
 
       <div id="saved-simulations-list" class="space-y-2 max-h-80 overflow-y-auto text-xs"></div>
+
+      <!-- FOOTER DO MODAL COM EXPORT/IMPORT BACKUP -->
+      <div class="border-t dark:border-slate-800 pt-3 flex flex-wrap justify-between items-center gap-2 text-xs">
+        <div class="flex gap-2">
+          <button onclick="exportBackupJSON()" title="Exportar Backup de Safras em JSON" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold px-2.5 py-1.5 rounded-lg border dark:border-slate-700 flex items-center gap-1 transition">
+            <i data-lucide="download" class="w-3.5 h-3.5 text-agro-600"></i> Exportar Backup
+          </button>
+          <button onclick="document.getElementById('file-input-restore').click()" title="Restaurar Safras de arquivo JSON" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold px-2.5 py-1.5 rounded-lg border dark:border-slate-700 flex items-center gap-1 transition">
+            <i data-lucide="upload" class="w-3.5 h-3.5 text-blue-500"></i> Restaurar Backup
+          </button>
+          <input type="file" id="file-input-restore" accept=".json" onchange="importBackupJSON(event)" class="hidden">
+        </div>
+        <button onclick="closeSavedSimulationsModal()" class="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold px-3 py-1.5 rounded-lg transition">
+          Fechar
+        </button>
+      </div>
     </div>
   </div>
 

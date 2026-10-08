@@ -873,6 +873,106 @@ function deleteSavedSimulation(index) {
   saved.splice(index, 1);
   localStorage.setItem('agrocusto_safras', JSON.stringify(saved));
   showSavedSimulationsModal();
+  populateCompareDropdowns();
+}
+
+// BACKUP E RESTAURAÇÃO COMPLETA EM JSON
+function exportBackupJSON() {
+  const safras = JSON.parse(localStorage.getItem('agrocusto_safras') || '[]');
+  const currentActive = calculateAll();
+
+  const backupData = {
+    app: "AgroCusto Pro",
+    version: "2.0",
+    exportDate: new Date().toISOString(),
+    safrasCount: safras.length,
+    safras: safras,
+    currentSimulation: {
+      cultura: currentActive.cultura,
+      unidade: currentActive.unMedida,
+      prodTotal: currentActive.prodTotal,
+      precoUnit: currentActive.precoUnitBruto,
+      taxaJuros: (parseFloat(document.getElementById('input-taxa-juros')?.value) || 6.0),
+      insumos, mopList, motempList, heList, benfList, maqList
+    }
+  };
+
+  const jsonStr = JSON.stringify(backupData, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `AgroCusto_Backup_${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importBackupJSON(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data || !Array.isArray(data.safras)) {
+        alert("Erro: O arquivo selecionado não é um backup válido do AgroCusto Pro.");
+        return;
+      }
+
+      let currentSaved = JSON.parse(localStorage.getItem('agrocusto_safras') || '[]');
+
+      const confirmAction = confirm(
+        `O arquivo contém ${data.safras.length} safra(s).\n\nDeseja ADICIONAR estas safras às ${currentSaved.length} existentes?\n(Clique em 'OK' para juntar ou 'Cancelar' para substituir a lista completa)`
+      );
+
+      if (confirmAction) {
+        const merged = [...currentSaved, ...data.safras];
+        localStorage.setItem('agrocusto_safras', JSON.stringify(merged));
+        alert(`Backup restaurado com sucesso! Total de ${merged.length} safras salvas.`);
+      } else {
+        localStorage.setItem('agrocusto_safras', JSON.stringify(data.safras));
+        alert(`Backup restaurado com sucesso! ${data.safras.length} safras carregadas.`);
+      }
+
+      if (data.currentSimulation && confirm("Deseja carregar a simulação ativa contida no backup para o formulário agora?")) {
+        const item = data.currentSimulation;
+        document.getElementById('input-cultura').value = item.cultura || "Milho Safra Comercial";
+        document.getElementById('input-unidade').value = item.unidade || "sc.";
+        document.getElementById('input-prod-total').value = item.prodTotal || 2400;
+        document.getElementById('input-preco-unitario').value = item.precoUnit || 1090;
+        document.getElementById('input-taxa-juros').value = item.taxaJuros || 6.0;
+
+        insumos = item.insumos || [];
+        mopList = item.mopList || [];
+        motempList = item.motempList || [];
+        heList = item.heList || [];
+        benfList = item.benfList || [];
+        maqList = item.maqList || [];
+
+        renderInsumosTable();
+        renderMOPTable();
+        renderMOTempTable();
+        renderHETable();
+        renderBenfTable();
+        renderMaqTable();
+        calculateAll();
+      }
+
+      showSavedSimulationsModal();
+      populateCompareDropdowns();
+
+    } catch (err) {
+      alert("Erro ao importar backup: " + err.message);
+    }
+  };
+
+  reader.readAsText(file);
+  event.target.value = '';
 }
 
 // COMPARADOR DE SAFRAS LADO A LADO
