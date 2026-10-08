@@ -94,7 +94,7 @@
         </div>
         <div>
           <h1 class="font-bold text-lg leading-tight tracking-tight">Custo de Produção & Viabilidade</h1>
-          <p class="text-xs text-agro-200 dark:text-slate-400 hidden sm:block">Modelo Econômico Completo (Terra, M.O. Permanente/Temporária, Horas Extras & Especulação)</p>
+          <p class="text-xs text-agro-200 dark:text-slate-400 hidden sm:block">Modelo Econômico Completo (Gabarito Bruno Soares)</p>
         </div>
       </div>
 
@@ -176,7 +176,7 @@
     <div id="wizard-stepper" class="no-print bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
       <div class="flex justify-between items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
         <button onclick="goToStep(1)" id="step-btn-1" class="step-active flex-1 min-w-[120px] p-2 rounded-lg border text-center transition flex flex-col items-center gap-1">
-          <span class="text-xs font-semibold">1. Produção & Terra</span>
+          <span class="text-xs font-semibold">1. Outros Dados</span>
         </button>
         <div class="w-4 h-0.5 bg-slate-300 dark:bg-slate-700"></div>
         <button onclick="goToStep(2)" id="step-btn-2" class="flex-1 min-w-[120px] p-2 rounded-lg border text-slate-500 dark:text-slate-400 text-center transition flex flex-col items-center gap-1">
@@ -200,7 +200,7 @@
     <!-- NAVEGAÇÃO MODO DASHBOARD (TABS) -->
     <div id="dashboard-tabs" class="hidden no-print flex gap-2 border-b border-slate-300 dark:border-slate-800 overflow-x-auto pb-1">
       <button onclick="switchDashTab('producao')" id="tab-producao" class="px-4 py-2 font-bold text-sm border-b-2 border-agro-600 text-agro-700 dark:text-agro-400 flex items-center gap-1.5">
-        <i data-lucide="package" class="w-4 h-4"></i> Produção & Terra
+        <i data-lucide="package" class="w-4 h-4"></i> Outros Dados
       </button>
       <button onclick="switchDashTab('insumos')" id="tab-insumos" class="px-4 py-2 font-medium text-sm text-slate-600 dark:text-slate-400 border-b-2 border-transparent flex items-center gap-1.5">
         <i data-lucide="layers" class="w-4 h-4"></i> Insumos
@@ -222,49 +222,75 @@
       <!-- COLUNA DE FORMULÁRIOS (7 cols em desktop) -->
       <div class="lg:col-span-7 space-y-6">
 
-        <!-- ETAPA 1: DADOS DA PRODUÇÃO, TERRA PRÓPRIA VS ARRENDADA -->
+        <!-- ETAPA 1: CARD EXACT DE "OUTROS DADOS PARA OS CÁLCULOS" DA IMAGEM DO BRUNO -->
         <section id="section-producao" class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
           <div class="border-b dark:border-slate-800 pb-3 flex justify-between items-center">
             <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <i data-lucide="sprout" class="w-5 h-5 text-agro-600"></i>
-              Outros Dados Para os Cálculos & Fator Terra
+              OUTROS DADOS PARA OS CÁLCULOS
             </h2>
-            <span class="text-xs bg-agro-100 dark:bg-agro-900/60 text-agro-800 dark:text-agro-300 px-2.5 py-0.5 rounded-full font-semibold">Parâmetros</span>
+            <span class="text-xs bg-agro-100 dark:bg-agro-900/60 text-agro-800 dark:text-agro-300 px-2.5 py-0.5 rounded-full font-semibold">Gabarito Bruno</span>
+          </div>
+
+          <!-- CARD EXATO DA IMAGEM -->
+          <div class="bg-amber-50/70 dark:bg-slate-800/80 p-4 rounded-xl border border-amber-200 dark:border-slate-700 space-y-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300 border-b border-amber-200 dark:border-slate-700 pb-1">
+              OUTROS DADOS PARA OS CÁLCULOS:
+            </h3>
+
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between items-center bg-blue-100/60 dark:bg-slate-900 p-2 rounded border border-blue-200 dark:border-slate-700">
+                <span class="font-bold text-slate-800 dark:text-slate-200">VALOR DOS INSUMOS =</span>
+                <div class="flex items-center gap-1 font-bold">
+                  <span>R$</span>
+                  <input type="number" id="input-valor-insumos-outros" value="28000.00" step="0.01" oninput="calculateAll()" class="w-28 border rounded px-1 py-0.5 text-xs text-right font-bold bg-white dark:bg-slate-800">
+                </div>
+              </div>
+
+              <div class="flex justify-between items-center bg-blue-100/60 dark:bg-slate-900 p-2 rounded border border-blue-200 dark:border-slate-700">
+                <span class="font-bold text-slate-800 dark:text-slate-200">JUROS (C. OPORTUNIDADE) =</span>
+                <div class="flex items-center gap-1 font-bold">
+                  <input type="number" id="input-taxa-juros" value="6.0" step="0.1" oninput="calculateAll()" class="w-20 border rounded px-1 py-0.5 text-xs text-right font-bold bg-white dark:bg-slate-800">
+                  <span>%</span>
+                </div>
+              </div>
+
+              <div class="flex justify-between items-center bg-blue-100/60 dark:bg-slate-900 p-2 rounded border border-blue-200 dark:border-slate-700">
+                <span class="font-bold text-slate-800 dark:text-slate-200">PRODUÇÃO =</span>
+                <div class="flex items-center gap-1 font-bold">
+                  <input type="number" id="input-prod-ha" value="60" oninput="calculateAll()" class="w-20 border rounded px-1 py-0.5 text-xs text-right font-bold bg-white dark:bg-slate-800">
+                  <input type="text" id="input-unidade" value="sc." onchange="calculateAll()" class="w-12 border rounded px-1 py-0.5 text-xs text-center font-bold bg-white dark:bg-slate-800">
+                </div>
+              </div>
+
+              <div class="flex justify-between items-center bg-blue-100/60 dark:bg-slate-900 p-2 rounded border border-blue-200 dark:border-slate-700">
+                <span class="font-bold text-slate-800 dark:text-slate-200">PREÇO DE MERCADO =</span>
+                <div class="flex items-center gap-1 font-bold">
+                  <span>R$</span>
+                  <input type="number" id="input-preco-unitario" value="1090.00" step="0.01" oninput="calculateAll()" class="w-28 border rounded px-1 py-0.5 text-xs text-right font-bold bg-white dark:bg-slate-800">
+                </div>
+              </div>
+
+              <div class="flex justify-between items-center bg-slate-200 dark:bg-slate-700 p-2 rounded font-bold text-slate-900 dark:text-white">
+                <span>Produção total</span>
+                <span id="lbl-producao-total-outros" class="text-sm">2400 sc.</span>
+              </div>
+            </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Cultura / Atividade</label>
-              <input type="text" id="input-cultura" value="Milho / Soja / Pecuária" onchange="calculateAll()" class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg p-2 text-sm focus:ring-2 focus:ring-agro-500 focus:outline-none">
+              <input type="text" id="input-cultura" value="Milho Safra Comercial" onchange="calculateAll()" class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg p-2 text-sm focus:ring-2 focus:ring-agro-500 focus:outline-none">
             </div>
 
             <div>
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Unidade de Medida</label>
-              <input type="text" id="input-unidade" value="sc." onchange="calculateAll()" class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg p-2 text-sm focus:ring-2 focus:ring-agro-500 focus:outline-none">
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Produção por Hectare (sc/ha)</label>
-              <input type="number" id="input-prod-ha" value="60" oninput="calculateAll()" class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg p-2 text-sm focus:ring-2 focus:ring-agro-500 focus:outline-none">
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Produção Total Estimada (sc.)</label>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Produção Total Manual (Opcional Override)</label>
               <input type="number" id="input-prod-total" value="2400" oninput="calculateAll()" class="w-full border border-agro-400 bg-agro-50/40 dark:bg-slate-800 rounded-lg p-2 text-sm font-bold text-agro-900 dark:text-agro-300 focus:ring-2 focus:ring-agro-500 focus:outline-none">
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Preço de Mercado (R$/unid)</label>
-              <input type="number" id="input-preco-unitario" value="1090.00" step="0.01" oninput="calculateAll()" class="w-full border border-agro-400 bg-agro-50/40 dark:bg-slate-800 rounded-lg p-2 text-sm font-bold text-agro-900 dark:text-agro-300 focus:ring-2 focus:ring-agro-500 focus:outline-none">
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Juros (Custo de Oportunidade % a.a.)</label>
-              <input type="number" id="input-taxa-juros" value="6.0" step="0.1" oninput="calculateAll()" class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg p-2 text-sm focus:ring-2 focus:ring-agro-500 focus:outline-none">
             </div>
           </div>
 
-          <!-- MÓDULO TERRA PRÓPRIA VS ARRENDADA (IMAGEM DO GABARITO) -->
+          <!-- MÓDULO TERRA PRÓPRIA VS ARRENDADA -->
           <div class="border-t dark:border-slate-800 pt-3 space-y-3">
             <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Custo da Terra (Própria vs Arrendada)</h3>
             
@@ -322,7 +348,7 @@
           <div class="border-b dark:border-slate-800 pb-3 flex justify-between items-center">
             <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <i data-lucide="layers" class="w-5 h-5 text-agro-600"></i>
-              Custos de Insumos (VALOR DOS INSUMOS = R$ 28.000,00)
+              Custos de Insumos Detalhados (Variáveis)
             </h2>
             <button onclick="addInsumoRow()" class="text-xs bg-agro-700 hover:bg-agro-600 text-white font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 transition shadow-sm">
               <i data-lucide="plus" class="w-3.5 h-3.5"></i> Adicionar Insumo
@@ -352,7 +378,7 @@
           </div>
         </section>
 
-        <!-- ETAPA 3: MÃO DE OBRA PERMANENTE, TEMPORÁRIA E HORA EXTRA (EXATO DA IMAGEM) -->
+        <!-- ETAPA 3: MÃO DE OBRA PERMANENTE, TEMPORÁRIA E HORA EXTRA -->
         <section id="section-maodeobra" class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
           <div class="border-b dark:border-slate-800 pb-3 flex justify-between items-center">
             <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -703,24 +729,57 @@
 
   </main>
 
-  <!-- MODAL DE COMPARAÇÃO DE CENÁRIOS -->
+  <!-- MODAL DE COMPARAÇÃO DE CENÁRIOS LADO A LADO -->
   <div id="modal-compare" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
-    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 dark:border-slate-800 p-6 space-y-5">
-      <div class="flex justify-between items-center border-b dark:border-slate-800 pb-3">
-        <h3 class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
-          <i data-lucide="git-compare" class="w-5 h-5 text-amber-500"></i> Comparador de Cenários
-        </h3>
-        <button onclick="closeCompareModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col border border-slate-200 dark:border-slate-800 p-6 space-y-4 overflow-hidden">
+      
+      <!-- HEADER DO MODAL -->
+      <div class="flex justify-between items-center border-b dark:border-slate-800 pb-3 flex-shrink-0">
+        <div>
+          <h3 class="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+            <i data-lucide="git-compare" class="w-5 h-5 text-amber-500"></i> Comparador de Safras Lado a Lado
+          </h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Compare duas safras salvas ou compare a simulação atual com qualquer safra anterior.</p>
+        </div>
+        <button onclick="closeCompareModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition p-1">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
       </div>
 
-      <p class="text-xs text-slate-600 dark:text-slate-400">Salve a simulação atual como <strong>Cenário A</strong> ou <strong>Cenário B</strong> para comparar qual é mais lucrativa lado a lado:</p>
+      <!-- SELEÇÃO DE SAFRAS / CENÁRIOS -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700/60 flex-shrink-0">
+        <div>
+          <label class="block text-xs font-bold text-amber-600 dark:text-amber-400 mb-1 flex items-center gap-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> Cenário A (Base)
+          </label>
+          <select id="select-scenario-a" onchange="onScenarioSelectChange('A')" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+            <option value="current">⚡ Simulação Atual no Formulário</option>
+          </select>
+        </div>
 
-      <div class="flex gap-2 text-xs">
-        <button onclick="setScenario('A')" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-3 py-1.5 rounded-lg flex-1">Salvar como Cenário A</button>
-        <button onclick="setScenario('B')" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-1.5 rounded-lg flex-1">Salvar como Cenário B</button>
+        <div>
+          <label class="block text-xs font-bold text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span> Cenário B (Comparação)
+          </label>
+          <select id="select-scenario-b" onchange="onScenarioSelectChange('B')" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <option value="current">⚡ Simulação Atual no Formulário</option>
+          </select>
+        </div>
       </div>
 
-      <div id="compare-results-area" class="grid grid-cols-2 gap-4 text-xs border-t dark:border-slate-800 pt-4"></div>
+      <!-- ÁREA DE RESULTADOS DA COMPARAÇÃO -->
+      <div id="compare-results-area" class="flex-1 overflow-y-auto space-y-4 pr-1">
+        <!-- Renderizado dinamicamente via app.js -->
+      </div>
+
+      <!-- FOOTER DO MODAL -->
+      <div class="border-t dark:border-slate-800 pt-3 flex justify-between items-center text-xs flex-shrink-0">
+        <span class="text-slate-500">Selecione safras para ver a análise de viabilidade comparativa.</span>
+        <button onclick="closeCompareModal()" class="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold px-4 py-2 rounded-lg transition">
+          Fechar
+        </button>
+      </div>
+
     </div>
   </div>
 
@@ -745,7 +804,7 @@
         <strong>AgroCusto Pro</strong> &bull; Modelo Econômico Agrícola (Gabarito Bruno Soares).
       </div>
       <div>
-        Terra Própria vs Arrendada &bull; M.O. Permanente & Temporária &bull; Hora Extra &bull; Especulação
+        Valor dos Insumos &bull; Juros Oportunidade &bull; Produção &bull; Preço de Mercado &bull; Produção Total
       </div>
     </div>
   </footer>

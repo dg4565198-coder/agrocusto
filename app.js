@@ -1,4 +1,4 @@
-// AgroCusto Pro - Complete Logic (Benfeitorias, Terra Própria/Arrendada, M.O.P., M.O. Temp, H.E., Especulação)
+// AgroCusto Pro - Complete Logic with OUTROS DADOS PARA OS CÁLCULOS card (Gabarito Bruno)
 
 let currentStep = 1;
 let currentMode = 'wizard';
@@ -11,17 +11,17 @@ let scenarioB = null;
 
 // Lista de Insumos
 let insumos = [
-  { id: 1, nome: "Adubos, Fertilizantes e Insumos Gerais", qtd: 1, valorUnit: 28000.00 }
+  { id: 1, nome: "VALOR DOS INSUMOS", qtd: 1, valorUnit: 28000.00 }
 ];
 
 // Lista de Mão de Obra Permanente (M.O.P.) - Gabarito: 8 Trab, R$ 3000, 13 meses = R$ 312.000
 let mopList = [
-  { id: 1, cargo: "Trabalhador Permanente (Operadores/Campeiros)", qtd: 8, salario: 3000.00, meses: 13 }
+  { id: 1, cargo: "Trabalhador Permanente (8 pessoas, 13º salário)", qtd: 8, salario: 3000.00, meses: 13 }
 ];
 
 // Lista de Mão de Obra Temporária - Gabarito: 300 Trab, 1 d/h, R$ 150/dia = R$ 45.000
 let motempList = [
-  { id: 1, servico: "Trabalhador Temporário (Colheita/Manej).", qtd: 300, quantDH: 1.0, valorDH: 150.00 }
+  { id: 1, servico: "Trabalhador Temporário (300 diárias)", qtd: 300, quantDH: 1.0, valorDH: 150.00 }
 ];
 
 // Lista de Horas Extras
@@ -202,12 +202,18 @@ function renderInsumosTable() {
   const lblTotal = document.getElementById('lbl-total-insumos');
   if (lblTotal) lblTotal.textContent = formatMoney(totalInsumos);
 
+  // Sincronizar com o card "OUTROS DADOS PARA OS CÁLCULOS"
+  const inputOutros = document.getElementById('input-valor-insumos-outros');
+  if (inputOutros && insumos.length > 0) {
+    inputOutros.value = totalInsumos.toFixed(2);
+  }
+
   lucide.createIcons();
 }
 
 function addInsumoRow() {
   const newId = insumos.length > 0 ? Math.max(...insumos.map(i => i.id)) + 1 : 1;
-  insumos.push({ id: newId, nome: "Novo Insumo", qtd: 10, valorUnit: 50.00 });
+  insumos.push({ id: newId, nome: "Novo Insumo", qtd: 1, valorUnit: 1000.00 });
   renderInsumosTable();
   calculateAll();
 }
@@ -227,7 +233,7 @@ function removeInsumo(id) {
   calculateAll();
 }
 
-// MÃO DE OBRA PERMANENTE (8 Trab, Salário 3000, Período 13 = 312.000)
+// MÃO DE OBRA PERMANENTE
 function renderMOPTable() {
   const tbody = document.getElementById('tbl-mop-body');
   if (!tbody) return;
@@ -284,7 +290,7 @@ function removeMOP(id) {
   calculateAll();
 }
 
-// MÃO DE OBRA TEMPORÁRIA (300 Trab, Quant 1.0 d/h, Valor 150 d/h = 45.000)
+// MÃO DE OBRA TEMPORÁRIA
 function renderMOTempTable() {
   const tbody = document.getElementById('tbl-motemp-body');
   if (!tbody) return;
@@ -557,6 +563,9 @@ function calculateAll() {
   const precoUnitBruto = parseFloat(document.getElementById('input-preco-unitario')?.value) || 0;
   const taxaJuros = (parseFloat(document.getElementById('input-taxa-juros')?.value) || 6.0) / 100;
 
+  // Sync Valor dos Insumos de Outros Dados
+  const valorInsumosOutros = parseFloat(document.getElementById('input-valor-insumos-outros')?.value) || 0;
+
   // Terra Própria vs Arrendada (Imagem)
   const tpVrArrend = parseFloat(document.getElementById('input-terra-propria-vrarrend')?.value) || 0;
   const tpHa = parseFloat(document.getElementById('input-terra-propria-ha')?.value) || 0;
@@ -572,10 +581,13 @@ function calculateAll() {
 
   // Produção Total
   const hectaresTotais = tpHa + taHa;
-  const prodTotal = prodTotalInput > 0 ? prodTotalInput : (prodHa * hectaresTotais);
+  const prodTotal = (prodTotalInput > 0) ? prodTotalInput : (prodHa * (hectaresTotais > 0 ? hectaresTotais : 1));
+  const unMedida = document.getElementById('input-unidade')?.value || 'sc.';
+  setText('lbl-producao-total-outros', `${prodTotal.toFixed(0)} ${unMedida}`);
 
   // 1. Total Insumos (Variável)
-  const totalInsumos = insumos.reduce((sum, item) => sum + (item.qtd * item.valorUnit), 0);
+  const totalInsumosDet = insumos.reduce((sum, item) => sum + (item.qtd * item.valorUnit), 0);
+  const totalInsumos = valorInsumosOutros > 0 ? valorInsumosOutros : totalInsumosDet;
 
   // 2. Mão de Obra Permanente (Fixo)
   const totalMOP = mopList.reduce((sum, item) => sum + (item.qtd * item.salario * item.meses), 0);
@@ -624,7 +636,6 @@ function calculateAll() {
   const PN = precoUnitBruto > 0 ? CT / precoUnitBruto : 0;
   const MS = prodTotal > 0 ? ((prodTotal - PN) / prodTotal) * 100 : 0;
 
-  // Especulação (Imagem: 762 sc., 31.77%)
   const especulacaoSc = prodTotal - PN;
   const especulacaoPct = MS;
 
@@ -637,7 +648,7 @@ function calculateAll() {
   setText('res-rlt', formatMoney(RLT));
   setText('res-rlop', formatMoney(Rlop));
 
-  setText('res-especulacao-sc', `${especulacaoSc.toFixed(0)} sc.`);
+  setText('res-especulacao-sc', `${especulacaoSc.toFixed(0)} ${unMedida}`);
   setText('res-especulacao-pct', `${especulacaoPct.toFixed(2)}%`);
 
   setText('res-dbenf', formatMoney(Dbenf));
@@ -652,7 +663,6 @@ function calculateAll() {
   setText('res-copme', formatMoney(Copme));
   setText('res-ctme', formatMoney(Ctme));
 
-  const unMedida = document.getElementById('input-unidade')?.value || 'sc.';
   setText('res-pn', `${PN.toFixed(1)} ${unMedida}`);
   setText('res-ms', `${MS.toFixed(1)}%`);
   setText('res-lucratividade', `${lucratividade.toFixed(1)}%`);
@@ -857,8 +867,13 @@ function deleteSavedSimulation(index) {
   showSavedSimulationsModal();
 }
 
+// COMPARADOR DE SAFRAS LADO A LADO
 function openCompareModal() {
-  document.getElementById('modal-compare')?.classList.remove('hidden');
+  const modal = document.getElementById('modal-compare');
+  if (!modal) return;
+
+  populateCompareDropdowns();
+  modal.classList.remove('hidden');
   renderCompareResults();
 }
 
@@ -866,51 +881,208 @@ function closeCompareModal() {
   document.getElementById('modal-compare')?.classList.add('hidden');
 }
 
-function setScenario(type) {
-  const data = calculateAll();
-  if (type === 'A') scenarioA = data;
-  else scenarioB = data;
+function populateCompareDropdowns() {
+  const selectA = document.getElementById('select-scenario-a');
+  const selectB = document.getElementById('select-scenario-b');
+  if (!selectA || !selectB) return;
+
+  const currentCultura = document.getElementById('input-cultura')?.value || 'Atual';
+  const saved = JSON.parse(localStorage.getItem('agrocusto_safras') || '[]');
+
+  let optionsHTML = `<option value="current">⚡ Simulação Atual (${currentCultura})</option>`;
+  saved.forEach((item, idx) => {
+    optionsHTML += `<option value="${idx}">📁 ${item.name} (${item.cultura} - ${item.date})</option>`;
+  });
+
+  const valA = selectA.value || 'current';
+  const valB = selectB.value || (saved.length > 0 ? '0' : 'current');
+
+  selectA.innerHTML = optionsHTML;
+  selectB.innerHTML = optionsHTML;
+
+  selectA.value = valA;
+  selectB.value = valB;
+}
+
+function onScenarioSelectChange(type) {
   renderCompareResults();
+}
+
+function getScenarioDataFromSelect(selectId) {
+  const val = document.getElementById(selectId)?.value || 'current';
+  if (val === 'current') {
+    const data = calculateAll();
+    data.displayName = `Simulação Atual (${data.cultura})`;
+    return data;
+  }
+
+  const saved = JSON.parse(localStorage.getItem('agrocusto_safras') || '[]');
+  const idx = parseInt(val, 10);
+  const item = saved[idx];
+  if (!item) {
+    const data = calculateAll();
+    data.displayName = `Simulação Atual`;
+    return data;
+  }
+
+  const data = computeDataFromSavedItem(item);
+  data.displayName = item.name;
+  return data;
+}
+
+function computeDataFromSavedItem(item) {
+  const cultura = item.cultura || 'Safra';
+  const unMedida = item.unidade || 'sc.';
+  const prodTotal = parseFloat(item.prodTotal) || 1;
+  const precoUnitBruto = parseFloat(item.precoUnit) || 0;
+  const taxaJuros = (parseFloat(item.taxaJuros) || 6.0) / 100;
+
+  const insumosList = item.insumos || [];
+  const totalInsumosDet = insumosList.reduce((sum, i) => sum + (i.qtd * i.valorUnit), 0);
+  const totalInsumos = totalInsumosDet > 0 ? totalInsumosDet : 28000;
+
+  const mopList = item.mopList || [];
+  const totalMOP = mopList.reduce((sum, i) => sum + (i.qtd * i.salario * i.meses), 0);
+
+  const motempList = item.motempList || [];
+  const totalMOTemp = motempList.reduce((sum, i) => sum + (i.qtd * i.quantDH * i.valorDH), 0);
+
+  const heList = item.heList || [];
+  const totalHE = heList.reduce((sum, i) => sum + (i.trab * i.salario * i.quant), 0);
+
+  const benfList = item.benfList || [];
+  let Dbenf = 0, Cobenf = 0;
+  benfList.forEach(b => {
+    const fatorUso = b.pc > 0 ? (b.pu / b.pc) : 1;
+    Dbenf += (b.vidaUtil > 0 ? (b.valor - b.valorFinal) / b.vidaUtil : 0) * fatorUso;
+    Cobenf += ((b.valor + b.valorFinal) / 2) * taxaJuros * fatorUso;
+  });
+
+  const maqList = item.maqList || [];
+  let Dmaq = 0, Comaq = 0;
+  maqList.forEach(m => {
+    const fatorUso = m.pc > 0 ? (m.pu / m.pc) : 1;
+    Dmaq += (m.vidaUtil > 0 ? (m.valor - m.valorFinal) / m.vidaUtil : 0) * fatorUso;
+    Comaq += ((m.valor + m.valorFinal) / 2) * taxaJuros * fatorUso;
+  });
+
+  const totalTerraPropria = 216000;
+  const totalTerraArrendada = 0;
+
+  const CFT = totalMOP + Dbenf + Cobenf + Dmaq + Comaq + totalTerraPropria;
+  const CVT = totalInsumos + totalMOTemp + totalHE + totalTerraArrendada;
+  const CT = CFT + CVT;
+  const RBT = prodTotal * precoUnitBruto;
+  const RLT = RBT - CT;
+  const Ctme = prodTotal > 0 ? CT / prodTotal : 0;
+  const PN = precoUnitBruto > 0 ? CT / precoUnitBruto : 0;
+  const MS = prodTotal > 0 ? ((prodTotal - PN) / prodTotal) * 100 : 0;
+  const especulacaoSc = prodTotal - PN;
+  const especulacaoPct = prodTotal > 0 ? (especulacaoSc / prodTotal) * 100 : 0;
+
+  return {
+    cultura, unMedida, prodTotal, precoUnitBruto,
+    CFT, CVT, CT, RBT, RLT, Ctme, PN, MS, especulacaoSc, especulacaoPct
+  };
 }
 
 function renderCompareResults() {
   const area = document.getElementById('compare-results-area');
   if (!area) return;
 
-  let html = `
-    <div class="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border dark:border-slate-700">
-      <h4 class="font-bold text-amber-500 mb-2 border-b dark:border-slate-700 pb-1">Cenário A</h4>
-      ${scenarioA ? `
-        <p>Cultura: <strong>${scenarioA.cultura}</strong></p>
-        <p>Custo Total: <strong>${formatMoney(scenarioA.CT)}</strong></p>
-        <p>Lucro Líquido: <strong class="text-emerald-500">${formatMoney(scenarioA.RLT)}</strong></p>
-        <p>Break-even: <strong>${scenarioA.PN.toFixed(1)} ${scenarioA.unMedida}</strong></p>
-        <p>Especulação: <strong>${scenarioA.especulacaoSc.toFixed(0)} sc. (${scenarioA.especulacaoPct.toFixed(2)}%)</strong></p>
-      ` : `<p class="text-slate-400">Nenhum cenário salvo em A.</p>`}
-    </div>
-    <div class="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border dark:border-slate-700">
-      <h4 class="font-bold text-blue-500 mb-2 border-b dark:border-slate-700 pb-1">Cenário B</h4>
-      ${scenarioB ? `
-        <p>Cultura: <strong>${scenarioB.cultura}</strong></p>
-        <p>Custo Total: <strong>${formatMoney(scenarioB.CT)}</strong></p>
-        <p>Lucro Líquido: <strong class="text-emerald-500">${formatMoney(scenarioB.RLT)}</strong></p>
-        <p>Break-even: <strong>${scenarioB.PN.toFixed(1)} ${scenarioB.unMedida}</strong></p>
-        <p>Especulação: <strong>${scenarioB.especulacaoSc.toFixed(0)} sc. (${scenarioB.especulacaoPct.toFixed(2)}%)</strong></p>
-      ` : `<p class="text-slate-400">Nenhum cenário salvo em B.</p>`}
-    </div>
-  `;
+  const dataA = getScenarioDataFromSelect('select-scenario-a');
+  const dataB = getScenarioDataFromSelect('select-scenario-b');
 
-  if (scenarioA && scenarioB) {
-    const diffLucro = scenarioB.RLT - scenarioA.RLT;
-    const winner = diffLucro > 0 ? 'Cenário B' : 'Cenário A';
-    html += `
-      <div class="col-span-2 bg-agro-900/80 border border-agro-500 p-3 rounded-xl text-center text-agro-200 font-bold">
-        🏆 O ${winner} é mais vantajoso (Diferença de ${formatMoney(Math.abs(diffLucro))} no lucro líquido)!
+  const diffLucro = dataB.RLT - dataA.RLT;
+  const diffCT = dataB.CT - dataA.CT;
+  const diffCtme = dataB.Ctme - dataA.Ctme;
+  const diffPN = dataB.PN - dataA.PN;
+
+  let winnerBanner = '';
+  if (Math.abs(diffLucro) < 0.01) {
+    winnerBanner = `
+      <div class="bg-amber-900/40 border border-amber-500/60 p-3 rounded-xl text-center text-amber-200 text-xs font-bold shadow">
+        ⚖️ Ambos os cenários possuem rentabilidade e resultado financeiro idênticos!
+      </div>
+    `;
+  } else if (diffLucro > 0) {
+    const pctGanhos = dataA.RLT !== 0 ? Math.abs((diffLucro / Math.abs(dataA.RLT)) * 100).toFixed(1) : '100';
+    winnerBanner = `
+      <div class="bg-emerald-950/80 border border-emerald-500 p-3.5 rounded-xl text-emerald-200 text-xs font-bold shadow-md flex items-center gap-3">
+        <div class="bg-emerald-500 text-slate-950 p-2 rounded-lg font-black text-lg">🏆</div>
+        <div>
+          <h4 class="text-sm font-black text-emerald-300">Cenário B (${dataB.displayName}) é mais lucrativo!</h4>
+          <p class="font-normal text-emerald-100 mt-0.5">Gera <strong>${formatMoney(diffLucro)}</strong> a mais de lucro líquido (+${pctGanhos}% de resultado em relação ao Cenário A).</p>
+        </div>
+      </div>
+    `;
+  } else {
+    const pctGanhos = dataB.RLT !== 0 ? Math.abs((diffLucro / Math.abs(dataB.RLT)) * 100).toFixed(1) : '100';
+    winnerBanner = `
+      <div class="bg-amber-950/80 border border-amber-500 p-3.5 rounded-xl text-amber-200 text-xs font-bold shadow-md flex items-center gap-3">
+        <div class="bg-amber-500 text-slate-950 p-2 rounded-lg font-black text-lg">🏆</div>
+        <div>
+          <h4 class="text-sm font-black text-amber-300">Cenário A (${dataA.displayName}) é mais lucrativo!</h4>
+          <p class="font-normal text-amber-100 mt-0.5">Gera <strong>${formatMoney(Math.abs(diffLucro))}</strong> a mais de lucro líquido (+${pctGanhos}% de resultado em relação ao Cenário B).</p>
+        </div>
       </div>
     `;
   }
 
-  area.innerHTML = html;
+  const rows = [
+    { label: "Cultura / Atividade", a: dataA.cultura, b: dataB.cultura, diff: "-", format: "text" },
+    { label: "Produção Total Estimada", a: `${dataA.prodTotal.toFixed(0)} ${dataA.unMedida}`, b: `${dataB.prodTotal.toFixed(0)} ${dataB.unMedida}`, diff: `${(dataB.prodTotal - dataA.prodTotal).toFixed(0)} ${dataA.unMedida}`, format: "text" },
+    { label: "Preço de Mercado por Saca", a: formatMoney(dataA.precoUnitBruto), b: formatMoney(dataB.precoUnitBruto), diff: formatMoney(dataB.precoUnitBruto - dataA.precoUnitBruto), format: "money" },
+    { label: "Receita Bruta Total (RBT)", a: formatMoney(dataA.RBT), b: formatMoney(dataB.RBT), diff: formatMoney(dataB.RBT - dataA.RBT), format: "money" },
+    { label: "Custos Fixos Totais (CFT)", a: formatMoney(dataA.CFT), b: formatMoney(dataB.CFT), diff: formatMoney(diffCT - (dataB.CVT - dataA.CVT)), format: "money" },
+    { label: "Custos Variáveis Totais (CVT)", a: formatMoney(dataA.CVT), b: formatMoney(dataB.CVT), diff: formatMoney(dataB.CVT - dataA.CVT), format: "money" },
+    { label: "Custo Total de Produção (CT)", a: formatMoney(dataA.CT), b: formatMoney(dataB.CT), diff: formatMoney(diffCT), format: "money", highlightCost: true },
+    { label: "Custo por Saca (R$/sc)", a: formatMoney(dataA.Ctme), b: formatMoney(dataB.Ctme), diff: formatMoney(diffCtme), format: "money", highlightCost: true },
+    { label: "Lucro Líquido Total (RLT)", a: formatMoney(dataA.RLT), b: formatMoney(dataB.RLT), diff: formatMoney(diffLucro), format: "money", highlightProfit: true },
+    { label: "Ponto de Nivelamento (Break-Even)", a: `${dataA.PN.toFixed(1)} ${dataA.unMedida}`, b: `${dataB.PN.toFixed(1)} ${dataB.unMedida}`, diff: `${diffPN.toFixed(1)} ${dataA.unMedida}`, format: "text" },
+    { label: "Margem de Segurança (%)", a: `${dataA.MS.toFixed(1)}%`, b: `${dataB.MS.toFixed(1)}%`, diff: `${(dataB.MS - dataA.MS).toFixed(1)}%`, format: "text" }
+  ];
+
+  let tableRowsHTML = '';
+  rows.forEach(r => {
+    let diffClass = "text-slate-600 dark:text-slate-400";
+    if (r.highlightProfit) {
+      diffClass = diffLucro > 0 ? "text-emerald-600 dark:text-emerald-400 font-black" : diffLucro < 0 ? "text-rose-600 dark:text-rose-400 font-black" : "text-slate-500";
+    } else if (r.highlightCost) {
+      diffClass = diffCT < 0 ? "text-emerald-600 dark:text-emerald-400 font-black" : diffCT > 0 ? "text-rose-600 dark:text-rose-400 font-black" : "text-slate-500";
+    }
+
+    const rowBg = r.highlightProfit ? "bg-emerald-50/60 dark:bg-emerald-950/30 font-bold" : r.highlightCost ? "bg-amber-50/50 dark:bg-slate-800/80" : "hover:bg-slate-50 dark:hover:bg-slate-800/40";
+
+    tableRowsHTML += `
+      <tr class="border-b dark:border-slate-800 ${rowBg} transition">
+        <td class="p-2.5 font-medium text-slate-800 dark:text-slate-200">${r.label}</td>
+        <td class="p-2.5 text-right font-semibold text-slate-900 dark:text-white">${r.a}</td>
+        <td class="p-2.5 text-right font-semibold text-slate-900 dark:text-white">${r.b}</td>
+        <td class="p-2.5 text-right font-bold ${diffClass}">${r.diff}</td>
+      </tr>
+    `;
+  });
+
+  area.innerHTML = `
+    ${winnerBanner}
+
+    <div class="border dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+      <table class="w-full text-xs text-left">
+        <thead class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider">
+          <tr>
+            <th class="p-2.5">Métrica / Indicador</th>
+            <th class="p-2.5 text-right text-amber-600 dark:text-amber-400">Cenário A</th>
+            <th class="p-2.5 text-right text-blue-600 dark:text-blue-400">Cenário B</th>
+            <th class="p-2.5 text-right">Diferença (B vs A)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRowsHTML}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 // CARREGAR DADOS DE EXEMPLO (IMAGEM DO GABARITO BRUNO)
@@ -921,6 +1093,7 @@ function loadSampleData() {
   document.getElementById('input-prod-total').value = "2400";
   document.getElementById('input-preco-unitario').value = "1090.00";
   document.getElementById('input-taxa-juros').value = "6.0";
+  document.getElementById('input-valor-insumos-outros').value = "28000.00";
 
   // Terra Própria
   document.getElementById('input-terra-propria-vrarrend').value = "5400.00";
